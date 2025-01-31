@@ -21,7 +21,7 @@ fun StartScreen(navController: NavHostController) {
                 }
             }
             Row(modifier = Modifier.weight(1f)) {
-                Button(onClick = {}) {
+                Button(onClick = {navController.navigate(DataCollectionName)}) {
                     Text("Data Collection")
                 }
             }

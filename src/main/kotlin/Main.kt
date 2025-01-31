@@ -9,11 +9,13 @@ import androidx.compose.ui.window.application
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.tahomarobotics.scouting.Server
+import java.net.InetAddress
 
-enum class Screens() {
-    Start,
-    Chart
-}
+
 
 @Composable
 @Preview
@@ -31,6 +33,9 @@ fun App() {
             }
             composable(route = ChartName) {
                 Chart(navController)
+            }
+            composable(route = DataCollectionName) {
+                DataCollectionScreen(navController)
             }
         }
     }

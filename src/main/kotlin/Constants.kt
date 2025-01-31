@@ -1,2 +1,3 @@
-public const val StartName = "home"
-public const val ChartName = "charts"
+const val StartName = "home"
+const val ChartName = "charts"
+const val DataCollectionName = "data_collection"
