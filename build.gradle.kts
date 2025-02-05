@@ -28,7 +28,8 @@ dependencies {
     // With compose.desktop.common you will also lose @Preview functionality
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha10")
-    implementation("org.tahomarobotics.scouting:koala:1.0-SNAPSHOT")
+    implementation("org.tahomarobotics.scouting:koala:1.0-rc3")
+    implementation("ch.qos.logback:logback-classic:1.5.15")
 }
 
 compose.desktop {

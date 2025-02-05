@@ -41,6 +41,7 @@ fun App() {
     }
 }
 
+var server: Server? = null
 val chartValues = arrayOf(3,5,2,6,3,75)
 val chartColors = arrayOf(Color.Red, Color.Green, Color.Blue, Color.White)
 
