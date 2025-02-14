@@ -1,7 +1,6 @@
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Button
 import androidx.compose.material.Card
@@ -41,9 +40,9 @@ fun DataCollectionScreen(navController: NavHostController) {
             }
 
             if (ipSubmitted && !serverStarted) {
+                serverStarted = true
                 scope.launch {
                     server = Server(2046, true, 2025, InetAddress.getByName(ip))
-                    serverStarted = true
                     server!!.addListener {
                         dataReceived.add(it)
                     }
@@ -64,7 +63,7 @@ fun DataCollectionScreen(navController: NavHostController) {
         if (showIpDialog) {
             Dialog(onDismissRequest = { showIpDialog = false }) {
                 Card {
-                    Column() {
+                    Column {
                         TextField(
                             value = ip,
                             onValueChange = { ip = it }
