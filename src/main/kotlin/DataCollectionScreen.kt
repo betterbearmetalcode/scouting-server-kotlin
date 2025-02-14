@@ -40,14 +40,7 @@ fun DataCollectionScreen(navController: NavHostController) {
             }
 
             if (ipSubmitted && !serverStarted) {
-                serverStarted = true
-                scope.launch {
-                    server = Server(2046, true, 2025, InetAddress.getByName(ip))
-                    server!!.addListener {
-                        dataReceived.add(it)
-                    }
-                    server!!.start()
-                }
+
             }
 
             LazyColumn {
@@ -73,6 +66,16 @@ fun DataCollectionScreen(navController: NavHostController) {
                                 if (Regex("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}\$") matches ip) {
                                     showIpDialog = false
                                     ipSubmitted = true
+                                    if (!serverStarted) {
+                                        serverStarted = true
+                                        server = Server(2046, true, 2025, InetAddress.getByName(ip))
+                                        scope.launch {
+                                            server!!.addListener {
+                                                dataReceived.add(it)
+                                            }
+                                            server!!.start()
+                                        }
+                                    }
                                 }
                             }) {
                                 Text("Submit")
