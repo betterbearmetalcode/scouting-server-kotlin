@@ -39,10 +39,6 @@ fun DataCollectionScreen(navController: NavHostController) {
                 }
             }
 
-            if (ipSubmitted && !serverStarted) {
-
-            }
-
             LazyColumn {
                 dataReceived.forEach {
                     item {

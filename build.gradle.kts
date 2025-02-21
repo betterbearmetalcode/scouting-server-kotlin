@@ -12,22 +12,15 @@ repositories {
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     google()
-//    maven {
-//        url = uri("https://maven.pkg.github.com/betterbearmetalcode/koala")
-//        credentials {
-//            username = System.getenv("GITHUB_USERNAME")
-//            password = System.getenv("GITHUB_TOKEN")
-//        }
-//    }
-
     maven("https://jitpack.io")
 }
 
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha10")
-    implementation("com.github.betterbearmetalcode:koala:v1.0.2")
+    implementation("com.github.betterbearmetalcode:koala:dev-02.20.2025-0324")
     implementation("ch.qos.logback:logback-classic:1.5.15")
+    implementation("org.dhatim:fastexcel:0.18.4")
 }
 
 
