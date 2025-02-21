@@ -12,7 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.navigation.NavController
+import org.bson.Document
 import org.dhatim.fastexcel.Workbook
+import org.dhatim.fastexcel.Worksheet
 import org.tahomarobotics.scouting.DatabaseManager
 import java.io.File
 import java.io.FileOutputStream
@@ -73,21 +75,49 @@ fun genExcelFile(eventKey: String) {
     worksheet.value(0, 0, "Match #")
 
     var i = 1
-    temp.forEach {
-        worksheet.value(0, i, it.key)
-        i++
-    }
+//    temp.forEach {
+//        worksheet.value(0, i, it.key)
+//        i++
+//        try {
+//            val doc = it.value as Document
+//            i = readKeysFromDocument(worksheet, doc, i)
+//        } catch (e: ClassCastException) {
+//
+//        }
+//    }
 
     matches.forEach {
         val index = matches.indexOf(it)
         worksheet.value(index+1, 0, index+1)
         i = 1
         it.forEach { (key, value) ->
-            worksheet.value(index+1, i, value.toString())
-            i++
+            try {
+                value as Document
+                i = readDocument(worksheet, value, index + 1, i, "$key:")
+            } catch (e: ClassCastException) {
+                worksheet.value(0, i, key)
+                worksheet.value(index+1, i, value.toString())
+                i++
+            }
         }
     }
 
     workbook.finish()
     workbook.close()
+}
+
+fun readDocument(worksheet: Worksheet, document: Document, currentColumn: Int, currentRow: Int, docKey: String) : Int {
+    var row = currentRow
+    document.forEach { (key, value) ->
+
+        try {
+            value as Document
+            row = readDocument(worksheet, value, currentColumn, row, "$docKey $key:" )
+        } catch (e: ClassCastException) {
+            worksheet.value(0, row, "$docKey $key")
+            worksheet.value(currentColumn, row, value.toString())
+            row++
+        }
+    }
+    return row
 }
