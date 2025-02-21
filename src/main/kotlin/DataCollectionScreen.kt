@@ -9,6 +9,10 @@ import androidx.compose.material.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.CoroutineScope
@@ -17,6 +21,8 @@ import kotlinx.coroutines.launch
 import org.tahomarobotics.scouting.Server
 import java.net.InetAddress
 
+
+
 @Composable
 fun DataCollectionScreen(navController: NavHostController) {
     var showIpDialog by remember { mutableStateOf(false) }
@@ -24,6 +30,10 @@ fun DataCollectionScreen(navController: NavHostController) {
     var serverStarted by remember { mutableStateOf(false) }
     var ip by remember { mutableStateOf("") }
     val dataReceived = remember { mutableStateListOf<String>() }
+    var serverRunningText by remember { mutableStateOf("Server Disabled") }
+    val textStyleRed = TextStyle(color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+    val textStyleGreen = TextStyle(color = Color(0,175,0), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+    var serverRunningTextStyle by remember { mutableStateOf<TextStyle>(textStyleRed) }
     Box {
         val scope = CoroutineScope(Dispatchers.Default)
         Column (modifier = Modifier.align(Alignment.TopStart)) {
@@ -33,10 +43,19 @@ fun DataCollectionScreen(navController: NavHostController) {
                 }) {
                     Text(text = "Start Server")
                 }
-                Button(onClick = { server?.stop() }) {
-                    Text(text = "Stop Server")
+                Button(onClick = { server?.stop()
                     serverStarted = false
+                    serverRunningText = "Server Disabled"
+                    serverRunningTextStyle = textStyleRed
+                }) {
+                    Text(text = "Stop Server")
+
                 }
+                Text(
+                    text = serverRunningText,
+                    modifier = Modifier.align(Alignment.CenterVertically),
+                    style = serverRunningTextStyle
+                )
             }
 
             LazyColumn {
@@ -59,11 +78,13 @@ fun DataCollectionScreen(navController: NavHostController) {
                         )
                         Row {
                             Button(onClick = {
-                                if (Regex("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}\$") matches ip) {
+                                if (Regex("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$") matches ip) {
                                     showIpDialog = false
                                     ipSubmitted = true
                                     if (!serverStarted) {
                                         serverStarted = true
+                                        serverRunningText = "Server Running on $ip"
+                                        serverRunningTextStyle = textStyleGreen
                                         server = Server(2046, true, 2025, InetAddress.getByName(ip))
                                         scope.launch {
                                             server!!.addListener {
@@ -72,6 +93,7 @@ fun DataCollectionScreen(navController: NavHostController) {
                                             server!!.start()
                                         }
                                     }
+                                    println(serverRunningText)
                                 }
                             }) {
                                 Text("Submit")

@@ -46,9 +46,12 @@ fun DatabaseManagementScreen(navController: NavController) {
             Text("Generate Excel file")
         }
 
-
         LazyColumn {
 
+        }
+
+        Button(onClick = {navController.navigateUp()}) {
+            Text("Back")
         }
     }
 
@@ -75,16 +78,6 @@ fun genExcelFile(eventKey: String) {
     worksheet.value(0, 0, "Match #")
 
     var i = 1
-//    temp.forEach {
-//        worksheet.value(0, i, it.key)
-//        i++
-//        try {
-//            val doc = it.value as Document
-//            i = readKeysFromDocument(worksheet, doc, i)
-//        } catch (e: ClassCastException) {
-//
-//        }
-//    }
 
     matches.forEach {
         val index = matches.indexOf(it)
