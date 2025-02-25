@@ -27,13 +27,13 @@ import java.net.InetAddress
 fun DataCollectionScreen(navController: NavHostController) {
     var showIpDialog by remember { mutableStateOf(false) }
     var ipSubmitted by remember { mutableStateOf(false) }
-    var serverStarted by remember { mutableStateOf(false) }
-    var ip by remember { mutableStateOf("") }
+    var serverStarted by remember { mutableStateOf(server?.isRunning == true) }
+    var ip by remember { mutableStateOf(server?.inetAddress?.hostAddress ?: "") }
     val dataReceived = remember { mutableStateListOf<String>() }
-    var serverRunningText by remember { mutableStateOf("Server Disabled") }
+    var serverRunningText by remember { if (serverStarted) { mutableStateOf("Server Running on $ip") } else { mutableStateOf("Server Disabled") } }
     val textStyleRed = TextStyle(color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 18.sp)
     val textStyleGreen = TextStyle(color = Color(0,175,0), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-    var serverRunningTextStyle by remember { mutableStateOf<TextStyle>(textStyleRed) }
+    var serverRunningTextStyle by remember { if (serverStarted) {mutableStateOf(textStyleGreen)} else { mutableStateOf(textStyleRed) } }
     Box {
         val scope = CoroutineScope(Dispatchers.Default)
         Column (modifier = Modifier.align(Alignment.TopStart)) {
