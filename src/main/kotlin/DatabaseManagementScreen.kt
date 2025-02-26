@@ -129,12 +129,13 @@ fun DatabaseManagementScreen(navController: NavController) {
             }
         }
 
-        LazyColumn {
-
-        }
-
-        Button(onClick = {navController.navigateUp()}) {
-            Text("Back")
+        Row {
+            Button(onClick = { navController.navigateUp() }) {
+                Text("Back")
+            }
+            Button(onClick = { navController.navigate(ScoringScreen)}) {
+                Text("Advanced Mode")
+            }
         }
     }
 

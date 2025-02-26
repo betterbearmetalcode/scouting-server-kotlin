@@ -36,6 +36,9 @@ fun App() {
             composable(route = DataManagementName) {
                 DatabaseManagementScreen(navController)
             }
+            composable(route = ScoringScreen) {
+                ScoringScreen(navController)
+            }
         }
     }
 }

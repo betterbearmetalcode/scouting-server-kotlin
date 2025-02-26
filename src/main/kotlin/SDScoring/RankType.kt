@@ -1,0 +1,3 @@
+enum class RankType {
+    STRATEGY, DRIVING_SKILL, MECHANICAL_SOUNDNESS
+}
