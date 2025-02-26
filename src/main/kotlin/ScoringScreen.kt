@@ -110,9 +110,11 @@ fun ScoringScreen(navController: NavController) {
 
         LazyColumn {
             listOfWeights.forEach { (key, value) ->
-                Row {
-                    Text("$key: $value")
-                    Slider(value.toFloat(), onValueChange = {listOfWeights[key] = it.toDouble()}, steps = 100)
+                item {
+                    Row {
+                        Text("$key: $value")
+                        Slider(value.toFloat(), onValueChange = {listOfWeights[key] = it.toDouble()}, steps = 100)
+                    }
                 }
             }
         }
