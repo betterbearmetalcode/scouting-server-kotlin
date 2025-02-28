@@ -32,14 +32,16 @@ class Ranker(rankType: RankType, teamNumber: Int, eventKey: String) {
 
 
         matches.forEach { (key, value) ->
-            val teams = stratData.forEach {
+            var tempVal : Document? = null
+            stratData.forEach  {
                 if (it["match"] as Int == key)
-                    when (rankType) {
-                        RankType.STRATEGY -> it["strategy_order"] as Document
+                    tempVal = when (rankType) {
+                        RankType.STRATEGY -> it["strategy"] as Document
                         RankType.DRIVING_SKILL -> it["driving_skill"] as Document
                         RankType.MECHANICAL_SOUNDNESS -> it["mechanical_soundness"] as Document
                     }
-            } as Document
+            }
+            val teams = tempVal!!
 
             val order = Order(teams["1"] as Int, teams["2"] as Int, teams["3"] as Int)
             sum += weighter(order, rankType, key, teamNumber)
@@ -49,11 +51,12 @@ class Ranker(rankType: RankType, teamNumber: Int, eventKey: String) {
 
     fun averager(rankType: RankType, teamNumber: Int): Double {
         var sum = 0
-        val maxMatch = PLAY!![rankType]!![teamNumber]!!.size
-        for (matchNumber in 0 until maxMatch) {
-            sum += PLAY!![rankType]!![teamNumber]!![matchNumber]!!
+        val matches = PLAY!![rankType]!![teamNumber]!!
+        val numMatches = matches.size
+        matches.forEach { (key, value) ->
+            sum += value
         }
-        return sum.toDouble() / maxMatch
+        return sum.toDouble() / numMatches
     }
 
     fun weighter(order: Order, rankType: RankType, matchNumber: Int, teamNumber: Int): Double {
