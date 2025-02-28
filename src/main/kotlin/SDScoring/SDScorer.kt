@@ -12,7 +12,10 @@ fun sdScorer(list: HashMap<Int, Double>): HashMap<Int, Double> {
     val sdScored = HashMap<Int, Double>()
     for ((i, item) in list.values.withIndex()) {
         val change = item - average
-        val sdScore = change / sd
+        var sdScore = change / sd
+        if (sdScore.isInfinite() || sdScore.isNaN()) {
+            sdScore = 0.0
+        }
         sdScored[list.keys.elementAt(i)] = sdScore
     }
     return sdScored
