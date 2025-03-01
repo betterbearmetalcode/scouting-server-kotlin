@@ -59,7 +59,8 @@ fun DatabaseManagementScreen(navController: NavController) {
         Row {
             Button(onClick = {
                 try {
-                    manager.processTeamsForEvent(eventCode)
+                    manager.pullFromTBA(DatabaseType.TEAMS, eventCode)
+                    manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
                 } catch (e: Exception) {
                     showError = true
                 }
@@ -71,7 +72,7 @@ fun DatabaseManagementScreen(navController: NavController) {
                     showEmptyEventError = true
                     return@Button
                 }
-                //manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
+                manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
                 val tbaData = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, eventCode)
 
                 val matches = manager.getDataFromEvent(DatabaseType.MATCH, eventCode)
@@ -80,43 +81,69 @@ fun DatabaseManagementScreen(navController: NavController) {
                     tbaData.forEach tba@{ tbaMatch ->
                         if ((matchNum != tbaMatch["match_number"]))
                             return@tba
+                        try {
+                            val breakdown = tbaMatch["score_breakdown"]!! as Document
+                            val breakdownBlue = breakdown["blue"]!! as Document
+                            val breakdownRed = breakdown["red"]!! as Document
 
-                        val breakdown = tbaMatch["score_breakdown"]!! as Document
-                        val breakdownBlue = breakdown["blue"]!! as Document
-                        val breakdownRed = breakdown["red"]!! as Document
+                            val startPos = it["robotStartPosition"] as Int
+                            when (startPos) {
+                                0 -> {
+                                    (it["auto"] as Document)
+                                        .putIfAbsent(
+                                            "moved",
+                                            convertYesNoToInt(breakdownRed["autoLineRobot1"] as String)
+                                        )
+                                    it.put("endPos", breakdownRed["endGameRobot1"])
+                                }
 
-                        val startPos = it["robotStartPosition"] as Int
-                        when (startPos) {
-                            0 -> {
-                                (it["auto"] as Document)
-                                    .putIfAbsent("moved", convertYesNoToInt(breakdownRed["autoLineRobot1"] as String))
-                                it.put("endPos", breakdownRed["endGameRobot1"])
+                                1 -> {
+                                    (it["auto"] as Document)
+                                        .putIfAbsent(
+                                            "moved",
+                                            convertYesNoToInt(breakdownRed["autoLineRobot2"] as String)
+                                        )
+                                    it.put("endPos", breakdownRed["endGameRobot2"])
+                                }
+
+                                2 -> {
+                                    (it["auto"] as Document)
+                                        .putIfAbsent(
+                                            "moved",
+                                            convertYesNoToInt(breakdownRed["autoLineRobot3"] as String)
+                                        )
+                                    it.put("endPos", breakdownRed["endGameRobot3"])
+                                }
+
+                                3 -> {
+                                    (it["auto"] as Document)
+                                        .putIfAbsent(
+                                            "moved",
+                                            convertYesNoToInt(breakdownBlue["autoLineRobot1"] as String)
+                                        )
+                                    it.put("endPos", breakdownBlue["endGameRobot1"])
+                                }
+
+                                4 -> {
+                                    (it["auto"] as Document)
+                                        .putIfAbsent(
+                                            "moved",
+                                            convertYesNoToInt(breakdownBlue["autoLineRobot2"] as String)
+                                        )
+                                    it.put("endPos", breakdownBlue["endGameRobot2"])
+                                }
+
+                                5 -> {
+                                    (it["auto"] as Document)
+                                        .putIfAbsent(
+                                            "moved",
+                                            convertYesNoToInt(breakdownBlue["autoLineRobot3"] as String)
+                                        )
+                                    it.put("endPos", breakdownBlue["endGameRobot3"])
+                                }
                             }
-                            1 -> {
-                                (it["auto"] as Document)
-                                    .putIfAbsent("moved", convertYesNoToInt(breakdownRed["autoLineRobot2"] as String))
-                                it.put("endPos", breakdownRed["endGameRobot2"])
-                            }
-                            2 -> {
-                                (it["auto"] as Document)
-                                    .putIfAbsent("moved", convertYesNoToInt(breakdownRed["autoLineRobot3"] as String))
-                                it.put("endPos", breakdownRed["endGameRobot3"])
-                            }
-                            3 -> {
-                                (it["auto"] as Document)
-                                    .putIfAbsent("moved", convertYesNoToInt(breakdownBlue["autoLineRobot1"] as String))
-                                it.put("endPos", breakdownBlue["endGameRobot1"])
-                            }
-                            4 -> {
-                                (it["auto"] as Document)
-                                    .putIfAbsent("moved", convertYesNoToInt(breakdownBlue["autoLineRobot2"] as String))
-                                it.put("endPos", breakdownBlue["endGameRobot2"])
-                            }
-                            5 -> {
-                                (it["auto"] as Document)
-                                    .putIfAbsent("moved", convertYesNoToInt(breakdownBlue["autoLineRobot3"] as String))
-                                it.put("endPos", breakdownBlue["endGameRobot3"])
-                            }
+                        } catch (e: NullPointerException) {
+
                         }
                     }
                     val string = hashToJSONString(it)
