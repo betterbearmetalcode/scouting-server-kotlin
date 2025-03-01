@@ -2,22 +2,25 @@ import SDScoring.Ranker
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavController
 import org.bson.Document
 import org.tahomarobotics.scouting.DatabaseType
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.collections.set
+import kotlin.math.round
 
 @Composable
 fun ScoringScreen(navController: NavController) {
     var eventKey by remember { mutableStateOf("") }
     var showEmptyEventError by remember { mutableStateOf(false) }
     val finalMap : HashMap<String, HashMap<Int, Double>> = remember { HashMap() }
-    val listOfWeights = remember { mutableMapOf<String, Double>() }
+    val listOfWeights = remember { mutableMapOf<String, MutableDoubleState>() }
     var debug by remember { mutableStateOf(false) }
     Column {
         Row (verticalAlignment = Alignment.CenterVertically) {
@@ -108,7 +111,7 @@ fun ScoringScreen(navController: NavController) {
             }
             finalMap.forEach { (key, value) ->
                 finalMap[key] = sdScorer(value)
-                listOfWeights.putIfAbsent(key, 1.0)
+                listOfWeights.putIfAbsent(key, mutableDoubleStateOf(1.0))
             }
             println("Finished")
             debug = true
@@ -117,11 +120,21 @@ fun ScoringScreen(navController: NavController) {
         }
 
         LazyColumn {
-            listOfWeights.forEach { (key, value) ->
-                item {
-                    Row {
-                        Text("$key: $value")
-                        Slider(value.toFloat(), onValueChange = { listOfWeights[key] = it.toDouble() }, steps = 2)
+            if (debug) {
+                listOfWeights.forEach { (key, value) ->
+                    item {
+                        Column {
+                            Row {
+                                Text("$key: ")
+                                TextField(
+                                    value = value.value.toString(),
+                                    onValueChange = {
+                                        value.value = it.betterParseDouble()
+                                    }
+                                )
+                            }
+                            Slider(value.value.toFloat(), onValueChange = { value.value = round(it.toDouble()*100)/100 }, steps = 99)
+                        }
                     }
                 }
             }

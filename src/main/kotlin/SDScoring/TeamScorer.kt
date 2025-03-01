@@ -1,6 +1,6 @@
 package SDScoring
 
-import java.util.*
+import java.util.Arrays
 
 fun teamScorer(weightedScoringMatrix: Array<DoubleArray>): DoubleArray {
     val teamScores = DoubleArray(weightedScoringMatrix[0].size)

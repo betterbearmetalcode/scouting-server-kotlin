@@ -19,17 +19,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import org.bson.Document
+import org.bson.json.JsonObject
 import org.dhatim.fastexcel.Workbook
 import org.dhatim.fastexcel.Worksheet
+import org.tahomarobotics.scouting.DatabaseType
 import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import javax.print.Doc
 
 enum class ScoutingType {
     MATCH,
     PITS,
     STRAT
+}
+
+fun convertYesNoToInt(value: String): Int {
+    if (value.lowercase() == "yes")
+        return 1
+    return 0
 }
 
 @Composable
@@ -47,14 +56,75 @@ fun DatabaseManagementScreen(navController: NavController) {
             Text("Event Code:")
             TextField(value = eventCode, onValueChange = {eventCode = it})
         }
-        Button(onClick = {
-            try {
-                manager.processTeamsForEvent(eventCode)
-            } catch (e: Exception) {
-                showError = true
+        Row {
+            Button(onClick = {
+                try {
+                    manager.processTeamsForEvent(eventCode)
+                } catch (e: Exception) {
+                    showError = true
+                }
+            }) {
+                Text("Submit")
             }
-        }) {
-            Text("Submit")
+            Button(onClick = {
+                if (eventCode.isEmpty()) {
+                    showEmptyEventError = true
+                    return@Button
+                }
+                //manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
+                val tbaData = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, eventCode)
+
+                val matches = manager.getDataFromEvent(DatabaseType.MATCH, eventCode)
+                matches.forEach {
+                    val matchNum = (it["match"] as String).toInt()
+                    tbaData.forEach tba@{ tbaMatch ->
+                        if ((matchNum != tbaMatch["match_number"]))
+                            return@tba
+
+                        val breakdown = tbaMatch["score_breakdown"]!! as Document
+                        val breakdownBlue = breakdown["blue"]!! as Document
+                        val breakdownRed = breakdown["red"]!! as Document
+
+                        val startPos = it["robotStartPosition"] as Int
+                        when (startPos) {
+                            0 -> {
+                                (it["auto"] as Document)
+                                    .putIfAbsent("moved", convertYesNoToInt(breakdownRed["autoLineRobot1"] as String))
+                                it.put("endPos", breakdownRed["endGameRobot1"])
+                            }
+                            1 -> {
+                                (it["auto"] as Document)
+                                    .putIfAbsent("moved", convertYesNoToInt(breakdownRed["autoLineRobot2"] as String))
+                                it.put("endPos", breakdownRed["endGameRobot2"])
+                            }
+                            2 -> {
+                                (it["auto"] as Document)
+                                    .putIfAbsent("moved", convertYesNoToInt(breakdownRed["autoLineRobot3"] as String))
+                                it.put("endPos", breakdownRed["endGameRobot3"])
+                            }
+                            3 -> {
+                                (it["auto"] as Document)
+                                    .putIfAbsent("moved", convertYesNoToInt(breakdownBlue["autoLineRobot1"] as String))
+                                it.put("endPos", breakdownBlue["endGameRobot1"])
+                            }
+                            4 -> {
+                                (it["auto"] as Document)
+                                    .putIfAbsent("moved", convertYesNoToInt(breakdownBlue["autoLineRobot2"] as String))
+                                it.put("endPos", breakdownBlue["endGameRobot2"])
+                            }
+                            5 -> {
+                                (it["auto"] as Document)
+                                    .putIfAbsent("moved", convertYesNoToInt(breakdownBlue["autoLineRobot3"] as String))
+                                it.put("endPos", breakdownBlue["endGameRobot3"])
+                            }
+                        }
+                    }
+                    val string = hashToJSONString(it)
+                    manager.processJSON(DatabaseType.MATCH, string, eventCode)
+                }
+            }) {
+                Text("Update stop and endgame with TBA")
+            }
         }
         Row {
             Button(
@@ -201,10 +271,47 @@ fun genExcelFile(eventKey: String, scoutingType: ScoutingType) {
     workbook.close()
 }
 
+fun handleValue(value: Any, key : String, json: StringBuilder) {
+    when (value) {
+        is Document -> {
+            json.append("\"$key\":{")
+            value.forEach { (newKey, newValue) ->
+                handleValue(newValue, newKey, json)
+            }
+            json.deleteCharAt(json.lastIndex)
+            json.append("},")
+        }
+        is String -> {
+            json.append("\"$key\":\"$value\",")
+        }
+        else -> {
+            if (key != "_id")
+                json.append("\"$key\":$value,")
+        }
+    }
+}
+
+fun hashToJSONString(hash : HashMap<String, Any>) : String {
+    val json = StringBuilder()
+
+    val currentWord = StringBuilder()
+    var lastChar = ' '
+    var inNet = false
+    var inTele = false
+    var inNotes = false
+    var currentType = ""
+    json.append("{")
+    hash.forEach { (key, value) ->
+        handleValue(value, key, json)
+    }
+    json.deleteCharAt(json.lastIndex)
+    json.append("}")
+    return json.toString()
+}
+
 fun readDocument(worksheet: Worksheet, document: Document, currentColumn: Int, currentRow: Int, docKey: String) : Int {
     var row = currentRow
     document.forEach { (key, value) ->
-
         try {
             value as Document
             row = readDocument(worksheet, value, currentColumn, row, "$docKey $key:" )
