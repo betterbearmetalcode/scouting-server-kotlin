@@ -14,7 +14,7 @@ import androidx.navigation.NavHostController
 fun StartScreen(navController: NavHostController) {
     Box(contentAlignment = Center) {
         Column(horizontalAlignment = CenterHorizontally, modifier = Modifier.fillMaxHeight()) {
-            //Extremely cursed code, but it works
+
             Row(modifier = Modifier.weight(1f)) {
                 Button(onClick = {}) {
                     Text("Help")
@@ -26,7 +26,7 @@ fun StartScreen(navController: NavHostController) {
                 }
             }
             Row(modifier = Modifier.weight(1f)) {
-                Button(onClick = {}) {
+                Button(onClick = {navController.navigate(DataManagementName)}) {
                     Text("Database Management")
                 }
             }

@@ -9,12 +9,8 @@ import androidx.compose.ui.window.application
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import org.tahomarobotics.scouting.DatabaseManager
 import org.tahomarobotics.scouting.Server
-import java.net.InetAddress
-
 
 
 @Composable
@@ -37,10 +33,18 @@ fun App() {
             composable(route = DataCollectionName) {
                 DataCollectionScreen(navController)
             }
+            composable(route = DataManagementName) {
+                DatabaseManagementScreen(navController)
+            }
+            composable(route = ScoringScreen) {
+                ScoringScreen(navController)
+            }
         }
     }
 }
 
+val manager = DatabaseManager(2025)
+var server: Server? = null
 val chartValues = arrayOf(3,5,2,6,3,75)
 val chartColors = arrayOf(Color.Red, Color.Green, Color.Blue, Color.White)
 
