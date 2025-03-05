@@ -27,9 +27,9 @@ fun App() {
             composable(route = StartName) {
                 StartScreen(navController)
             }
-            composable(route = ChartName) {
-                Chart(navController)
-            }
+//            composable(route = ChartName) {
+//                Chart(navController)
+//            }
             composable(route = DataCollectionName) {
                 DataCollectionScreen(navController)
             }
