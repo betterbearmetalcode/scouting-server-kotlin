@@ -14,7 +14,6 @@ import androidx.navigation.NavHostController
 fun StartScreen(navController: NavHostController) {
     Box(contentAlignment = Center) {
         Column(horizontalAlignment = CenterHorizontally, modifier = Modifier.fillMaxHeight()) {
-
             Row(modifier = Modifier.weight(1f)) {
                 Button(onClick = {}) {
                     Text("Help")
@@ -31,7 +30,7 @@ fun StartScreen(navController: NavHostController) {
                 }
             }
             Row(modifier = Modifier.weight(1f)) {
-                Button(onClick = {navController.navigate(ChartName)}) {
+                Button(onClick = {/*navController.navigate(ChartName)*/}) {
                     Text("Charts")
                 }
             }
