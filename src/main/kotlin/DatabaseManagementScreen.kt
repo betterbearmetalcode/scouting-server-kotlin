@@ -1,6 +1,5 @@
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.RadioButton
@@ -19,15 +18,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import org.bson.Document
-import org.bson.json.JsonObject
 import org.dhatim.fastexcel.Workbook
 import org.dhatim.fastexcel.Worksheet
 import org.tahomarobotics.scouting.DatabaseType
+import org.tahomarobotics.scouting.TBAInterface
 import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import javax.print.Doc
 
 enum class ScoutingType {
     MATCH,
@@ -46,6 +44,7 @@ fun DatabaseManagementScreen(navController: NavController) {
     var eventCode by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
     var showEmptyEventError by remember { mutableStateOf(false) }
+    var invalidEventError by remember { mutableStateOf(false) }
     var matchSelected by remember { mutableStateOf(true) }
     var pitsSelected by remember { mutableStateOf(false) }
     var stratSelected by remember { mutableStateOf(false) }
@@ -70,6 +69,10 @@ fun DatabaseManagementScreen(navController: NavController) {
             Button(onClick = {
                 if (eventCode.isEmpty()) {
                     showEmptyEventError = true
+                    return@Button
+                }
+                if (!TBAInterface.isValidEventKey(eventCode)) {
+                    invalidEventError = true
                     return@Button
                 }
                 manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
@@ -251,6 +254,39 @@ fun DatabaseManagementScreen(navController: NavController) {
             text = {Text("Empty Event Code!")},
         )
     }
+    if (invalidEventError) {
+        AlertDialog(
+            onDismissRequest = { invalidEventError = false },
+            buttons = {Button(onClick = {invalidEventError = false}) {Text("Ok")}},
+            text = {Text("Invalid Event Code!")},
+        )
+    }
+}
+
+fun generateLocationIndices(key: String, value: Any, prefix: String, hash: HashMap<String, Int>, column: Int, spreadsheet: Worksheet) : Int {
+    var currentColumn = column
+
+    when (value) {
+        is Document -> {
+            value.forEach { (newKey, value) ->
+                currentColumn = generateLocationIndices(newKey, value, "$prefix$key: ", hash, currentColumn, spreadsheet)
+            }
+        }
+        else -> {
+            if (key == "match" || key == "_id")
+                return currentColumn
+            var temp = "$prefix$key".replace("_", " ")
+            val words = temp.split(" ")
+            val finalVal = StringBuilder()
+            for (word in words) {
+                finalVal.append(word[0].uppercaseChar() + word.drop(1) + " ")
+            }
+            spreadsheet.value(0, currentColumn, finalVal.toString())
+            hash["$prefix$key"] = currentColumn
+            currentColumn++
+        }
+    }
+    return currentColumn
 }
 
 fun genExcelFile(eventKey: String, scoutingType: ScoutingType) {
@@ -273,6 +309,10 @@ fun genExcelFile(eventKey: String, scoutingType: ScoutingType) {
     worksheet.value(0, 0, "Match #")
 
     var i = 1
+    val keyLocationsHash = HashMap<String, Int>()
+    matches[0].forEach { (key, value) ->
+        i = generateLocationIndices(key, value, "", keyLocationsHash, i, worksheet)
+    }
 
     matches.forEach {
         val index = matches.indexOf(it)
@@ -283,13 +323,14 @@ fun genExcelFile(eventKey: String, scoutingType: ScoutingType) {
                 worksheet.value(index+1, 0, value.toString())
                 return@forEach
             }
-            try {
-                value as Document
-                i = readDocument(worksheet, value, index + 1, i, "$key:")
-            } catch (e: ClassCastException) {
-                worksheet.value(0, i, key)
-                worksheet.value(index+1, i, value.toString())
-                i++
+            when (value) {
+                is Document -> i = readDocument(worksheet, value, index + 1, i, keyLocationsHash, "$key: ")
+                else -> {
+                    if (key != "_id") {
+                        worksheet.value(index + 1, keyLocationsHash[key]!!, value.toString())
+                        i++
+                    }
+                }
             }
         }
     }
@@ -309,7 +350,7 @@ fun handleValue(value: Any, key : String, json: StringBuilder) {
             json.append("},")
         }
         is String -> {
-            json.append("\"$key\":\"$value\",")
+            json.append("\"$key\":\"${value.replace("\"", "\\\"")}\",")
         }
         else -> {
             if (key != "_id")
@@ -336,15 +377,14 @@ fun hashToJSONString(hash : HashMap<String, Any>) : String {
     return json.toString()
 }
 
-fun readDocument(worksheet: Worksheet, document: Document, currentColumn: Int, currentRow: Int, docKey: String) : Int {
+fun readDocument(worksheet: Worksheet, document: Document, currentColumn: Int, currentRow: Int, locationsHash: HashMap<String, Int>, prefix: String) : Int {
     var row = currentRow
     document.forEach { (key, value) ->
         try {
             value as Document
-            row = readDocument(worksheet, value, currentColumn, row, "$docKey $key:" )
+            row = readDocument(worksheet, value, currentColumn, row, locationsHash, "$prefix$key: ")
         } catch (e: ClassCastException) {
-            worksheet.value(0, row, "$docKey $key")
-            worksheet.value(currentColumn, row, value.toString())
+            worksheet.value(currentColumn, locationsHash["$prefix$key"]!!, value.toString())
             row++
         }
     }

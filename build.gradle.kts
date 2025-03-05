@@ -3,6 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     kotlin("jvm")
     id("org.jetbrains.compose")
+    alias(libs.plugins.compose.compiler)
 }
 
 group = "org.tahomarobotics.scouting"
@@ -18,12 +19,11 @@ repositories {
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha10")
-    implementation("com.github.betterbearmetalcode:koala:2.1.1")
+    implementation("com.github.betterbearmetalcode:koala:dev-03.1.25-1")
     implementation("ch.qos.logback:logback-classic:1.5.15")
     implementation("org.dhatim:fastexcel:0.18.4")
     implementation("org.mongodb:mongodb-driver-sync:5.2.1")
 }
-
 
 compose.desktop {
     application {
@@ -33,6 +33,13 @@ compose.desktop {
             targetFormats(TargetFormat.AppImage)
             packageName = "scouting-server"
             packageVersion = "1.0.0"
+        }
+        buildTypes.release {
+
+        }
+        buildTypes.release.proguard {
+            version.set("7.4.0")
+            configurationFiles.from("proguard-rules.pro")
         }
     }
 }

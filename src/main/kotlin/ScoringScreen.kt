@@ -10,6 +10,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavController
 import org.bson.Document
 import org.tahomarobotics.scouting.DatabaseType
+import org.tahomarobotics.scouting.TBAInterface
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.collections.set
@@ -19,6 +20,7 @@ import kotlin.math.round
 fun ScoringScreen(navController: NavController) {
     var eventKey by remember { mutableStateOf("") }
     var showEmptyEventError by remember { mutableStateOf(false) }
+    var invalidEventError by remember { mutableStateOf(false) }
     val finalMap : HashMap<String, HashMap<Int, Double>> = remember { HashMap() }
     val listOfWeights = remember { mutableMapOf<String, MutableDoubleState>() }
     var debug by remember { mutableStateOf(false) }
@@ -29,13 +31,19 @@ fun ScoringScreen(navController: NavController) {
         }
         Button(onClick = {
             debug = false
-            if (eventKey.isEmpty())
+            if (eventKey.isEmpty()) {
                 showEmptyEventError = true
+                return@Button
+            }
+            if (!TBAInterface.isValidEventKey(eventKey)) {
+                invalidEventError = true
+                return@Button
+            }
             val play: EnumMap<RankType, HashMap<Int, HashMap<Int, Int>>> = EnumMap(RankType::class.java)
             play.putIfAbsent(RankType.STRATEGY, HashMap())
             play.putIfAbsent(RankType.DRIVING_SKILL, HashMap())
             play.putIfAbsent(RankType.MECHANICAL_SOUNDNESS, HashMap())
-            val stratInfo = manager.getStratForEvent(eventKey)
+            val stratInfo = manager.getDataFromEvent(DatabaseType.STRATEGY, eventKey)
 
             stratInfo.forEach {
                 val strat = it["strategy"] as Document
@@ -145,6 +153,13 @@ fun ScoringScreen(navController: NavController) {
                 onDismissRequest = { showEmptyEventError = false },
                 buttons = {Button(onClick = {showEmptyEventError = false}) {Text("Ok")}},
                 text = {Text("Empty Event Code!")},
+            )
+        }
+        if (invalidEventError) {
+            AlertDialog(
+                onDismissRequest = { invalidEventError = false },
+                buttons = {Button(onClick = {invalidEventError = false}) {Text("Ok")}},
+                text = {Text("Invalid Event Code!")},
             )
         }
     }
