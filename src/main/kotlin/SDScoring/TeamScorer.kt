@@ -1,17 +1,14 @@
 package SDScoring
 
-import java.util.Arrays
-
-fun teamScorer(weightedScoringMatrix: Array<DoubleArray>): DoubleArray {
-    val teamScores = DoubleArray(weightedScoringMatrix[0].size)
-    for (c in weightedScoringMatrix[0].indices) {
-        for (r in weightedScoringMatrix.indices) {
-            teamScores[c] += weightedScoringMatrix[r][c]
+fun teamScorer(weightedScoringMatrix: Map<String, HashMap<Int, Double>>): Map<Int, Double> {
+    val teamScores = HashMap<Int, Double>()
+    val listOfTeams = weightedScoringMatrix[weightedScoringMatrix.keys.first()]!!.keys
+    for (team in listOfTeams) {
+        for ((key, value) in weightedScoringMatrix) {
+            if (teamScores.putIfAbsent(team, value[team]!!) != null) {
+                teamScores[team] = teamScores[team]!! + value[team]!!
+            }
         }
     }
     return teamScores
-}
-
-fun teamsRanked(teamScores: DoubleArray): DoubleArray {
-    return Arrays.stream(teamScores).sorted().toArray()
 }

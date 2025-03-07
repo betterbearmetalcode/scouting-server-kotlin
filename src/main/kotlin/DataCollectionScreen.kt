@@ -43,7 +43,8 @@ fun DataCollectionScreen(navController: NavHostController) {
                 }) {
                     Text(text = "Start Server")
                 }
-                Button(onClick = { server?.stop()
+                Button(onClick = {
+                    server?.stop()
                     serverStarted = false
                     serverRunningText = "Server Disabled"
                     serverRunningTextStyle = textStyleRed
@@ -93,7 +94,6 @@ fun DataCollectionScreen(navController: NavHostController) {
                                             server!!.start()
                                         }
                                     }
-                                    println(serverRunningText)
                                 }
                             }) {
                                 Text("Submit")
