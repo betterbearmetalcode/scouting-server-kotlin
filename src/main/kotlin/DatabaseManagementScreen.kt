@@ -275,18 +275,23 @@ fun generateLocationIndices(key: String, value: Any, prefix: String, hash: HashM
         else -> {
             if (key == "match" || key == "_id")
                 return currentColumn
-            var temp = "$prefix$key".replace("_", " ")
-            val words = temp.split(" ")
-            val finalVal = StringBuilder()
-            for (word in words) {
-                finalVal.append(word[0].uppercaseChar() + word.drop(1) + " ")
-            }
-            spreadsheet.value(0, currentColumn, finalVal.toString())
+            val formattedKey = formatKey("$prefix$key")
+            spreadsheet.value(0, currentColumn, formattedKey)
             hash["$prefix$key"] = currentColumn
             currentColumn++
         }
     }
     return currentColumn
+}
+
+fun formatKey(key: String): String {
+    var temp = key.replace("_", " ")
+    val words = temp.split(" ")
+    val finalVal = StringBuilder()
+    for (word in words) {
+        finalVal.append(word[0].uppercaseChar() + word.drop(1) + " ")
+    }
+    return finalVal.toString()
 }
 
 fun genExcelFile(eventKey: String, scoutingType: ScoutingType) {
