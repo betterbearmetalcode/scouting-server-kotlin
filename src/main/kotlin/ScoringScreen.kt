@@ -2,30 +2,18 @@ import SDScoring.Ranker
 import SDScoring.normalizeWeights
 import SDScoring.scoring
 import SDScoring.teamScorer
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -33,9 +21,7 @@ import org.bson.Document
 import org.tahomarobotics.scouting.DatabaseType
 import org.tahomarobotics.scouting.TBAInterface
 import java.util.*
-import kotlin.collections.HashMap
 import kotlin.collections.Map.Entry
-import kotlin.collections.set
 import kotlin.math.round
 
 @Composable
@@ -44,16 +30,20 @@ fun ScoringScreen(navController: NavController) {
     var showEmptyEventError by remember { mutableStateOf(false) }
     var invalidEventError by remember { mutableStateOf(false) }
     val finalMap : HashMap<String, HashMap<Int, Double>> = remember { HashMap() }
+    var weightedMap = remember { HashMap<String, HashMap<Int, Double>>() }
     val listOfWeights = remember { mutableMapOf<String, MutableDoubleState>() }
     var debug by remember { mutableStateOf(false) }
     var showTeamsRanked by remember { mutableStateOf(false) }
     var showMatrix by remember { mutableStateOf(false) }
+    var showWeightedMatrix by remember { mutableStateOf(false) }
     var matrixVerticalScrollState = rememberScrollState(0)
     var matrixHorizontalScrollState = rememberScrollState(0)
     val cellWidth = 90.dp
     val cellHeight = 50.dp
     val smallCellHeight = 25.dp
     var teams = HashMap<Int, Double>()
+    val cold = Color(0, 150, 255)
+    val warm = Color(255, 165, 0)
     Column {
         Row (verticalAlignment = Alignment.CenterVertically) {
             Text("Event Code:")
@@ -133,7 +123,12 @@ fun ScoringScreen(navController: NavController) {
                         Ranker(RankType.MECHANICAL_SOUNDNESS, num, eventKey).getRank()
                     )
                 }
-
+                hashOfTeamsToRankings.forEach { (key, value) ->
+                    value.forEach {
+                        finalMap.putIfAbsent(it.key.toString(), HashMap())
+                        finalMap[it.key.toString()]!![key] = it.value
+                    }
+                }
                 val matchData = manager.getDataFromEvent(DatabaseType.MATCH, eventKey)
                 teams.forEach {
                     val teamKey = it["team_number"] as Int
@@ -158,6 +153,7 @@ fun ScoringScreen(navController: NavController) {
                         finalMap[key]!![teamKey] = tempHash[key]!!
                     }
                 }
+
                 finalMap.forEach { (key, value) ->
                     finalMap[key] = sdScorer(value)
                     listOfWeights.putIfAbsent(key, mutableDoubleStateOf(1.0))
@@ -173,31 +169,50 @@ fun ScoringScreen(navController: NavController) {
         }
 
         if (debug) {
-            Row {
-                Button(onClick = {
-                    if (showTeamsRanked) {
-                        showTeamsRanked = false
-                    } else {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Row (modifier = Modifier.align(Alignment.CenterStart)) {
+                    Button(onClick = {
+                        if (showTeamsRanked) {
+                            showTeamsRanked = false
+                        } else {
+                            for (entry in finalMap) {
+                                weightedMap[entry.key] = entry.value.clone() as HashMap<Int, Double>
+                            }
+                            val weightsAsDouble = HashMap<String, Double>()
+                            listOfWeights.forEach { (key, value) ->
+                                weightsAsDouble[key] = value.value
+                            }
+
+                            teams = calculateList(weightsAsDouble, weightedMap) as HashMap<Int, Double>
+
+                            showTeamsRanked = true
+                        }
+                    }) {
+                        if (showTeamsRanked) {
+                            Text("Edit Weights")
+                        } else {
+                            Text("Show Results")
+                        }
+                    }
+                    Button(onClick = {
+                        showMatrix = !showMatrix
+                        for (entry in finalMap) {
+                            weightedMap[entry.key] = entry.value.clone() as HashMap<Int, Double>
+                        }
                         val weightsAsDouble = HashMap<String, Double>()
                         listOfWeights.forEach { (key, value) ->
                             weightsAsDouble[key] = value.value
                         }
-
-                        teams = calculateList(weightsAsDouble, finalMap) as HashMap<Int, Double>
-
-                        showTeamsRanked = true
-                    }
-                }) {
-                    if (showTeamsRanked) {
-                        Text("Edit Weights")
-                    } else {
-                        Text("Show Results")
+                        teams = calculateList(weightsAsDouble, weightedMap) as HashMap<Int, Double>
+                    }) {
+                        Text("Show Matrix")
                     }
                 }
-                Button(onClick = {
-                    showMatrix = !showMatrix
-                }) {
-                    Text("Show Matrix")
+                if (showMatrix) {
+                    Row (modifier = Modifier.align(Alignment.CenterEnd)) {
+                        Text("Show Weighted")
+                        Switch(showWeightedMatrix, onCheckedChange = { showWeightedMatrix = !showWeightedMatrix })
+                    }
                 }
             }
 
@@ -205,17 +220,32 @@ fun ScoringScreen(navController: NavController) {
                 Column (modifier = Modifier.fillMaxHeight().verticalScroll(matrixVerticalScrollState)) {
                     Row (modifier = Modifier.height(smallCellHeight).horizontalScroll(matrixHorizontalScrollState)) {
                         Text(" ", Modifier.border(1.dp, Color.Black).fillMaxHeight().width(cellWidth * 1.5f))
-                        finalMap.values.first().forEach { (key, value) ->
+                        (if (showWeightedMatrix) weightedMap else finalMap).values.first().forEach { (key, value) ->
                             Text(key.toString(), modifier = Modifier.border(1.dp, Color.Black).fillMaxHeight().width(cellWidth))
                         }
                     }
 
-                    finalMap.forEach { (key, value) ->
+                    (if (showWeightedMatrix) weightedMap else finalMap).forEach { (key, rowValue) ->
                         Row(modifier = Modifier.height(cellHeight).horizontalScroll(matrixHorizontalScrollState)) {
                             Text(formatKey(key), modifier = Modifier.border(1.dp, Color.Black).fillMaxHeight().width(cellWidth * 1.5f))
 
-                            value.forEach { (key, value) ->
-                                Text(String.format("%.3f", value), modifier = Modifier.border(1.dp, Color.Black).fillMaxHeight().width(cellWidth), fontSize = 28.sp)
+                            rowValue.forEach { (key, value) ->
+                                Text(
+                                    String.format("%.3f", value * if (showWeightedMatrix) 10 else 1),
+                                    modifier = Modifier
+                                        .border(1.dp, Color.Black)
+                                        .fillMaxHeight()
+                                        .width(cellWidth)
+                                        .background(
+                                            colorLerp(
+                                                cold,
+                                                warm,
+                                                if (showWeightedMatrix)
+                                                    ((value.toFloat() * 10) - (rowValue.values.min().toFloat() * 10)) / (rowValue.values.max().toFloat() * 10)
+                                                else
+                                                    (value.toFloat() - rowValue.values.min().toFloat()) / rowValue.values.max().toFloat()
+                                        ))
+                                    , fontSize = 28.sp)
                             }
                         }
                     }
@@ -306,4 +336,8 @@ fun processDocument(document: Document, hash: HashMap<String, Double>, prefix: S
             is Int -> hash["$prefix $key"] = value + (hash["$prefix $key"] ?: 0.0)
         }
     }
+}
+
+fun colorLerp(cold: Color, warm: Color, v: Float) : Color {
+    return Color((warm.red - cold.red) * v + cold.red, (warm.green - cold.green) * v + cold.green, (warm.blue - cold.blue) * v + cold.blue)
 }

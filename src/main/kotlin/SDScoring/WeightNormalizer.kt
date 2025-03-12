@@ -4,9 +4,12 @@ import kotlin.math.absoluteValue
 
 fun normalizeWeights(weights: Map<String, Double>): Map<String, Double> {
     val normalizedWeights = HashMap<String, Double>()
-    val sum: Double = weights.values.sum()
+    var sum = 0.0
+    weights.values.forEach { weightValue ->
+        sum += weightValue.absoluteValue
+    }
     for ((key, value) in weights) {
-        normalizedWeights[key] = value.absoluteValue / sum
+        normalizedWeights[key] = value / sum
     }
     return normalizedWeights
 }

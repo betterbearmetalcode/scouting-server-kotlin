@@ -18,14 +18,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import org.bson.Document
+import org.dhatim.fastexcel.Color
+import org.dhatim.fastexcel.StyleSetter
 import org.dhatim.fastexcel.Workbook
 import org.dhatim.fastexcel.Worksheet
 import org.tahomarobotics.scouting.DatabaseType
 import org.tahomarobotics.scouting.TBAInterface
 import java.io.File
 import java.io.FileOutputStream
+import java.lang.Integer.parseInt
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.absoluteValue
 
 enum class ScoutingType {
     MATCH,
@@ -49,7 +53,7 @@ fun DatabaseManagementScreen(navController: NavController) {
     var pitsSelected by remember { mutableStateOf(false) }
     var stratSelected by remember { mutableStateOf(false) }
     var textStyleBold = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
-    var scoutingType by remember { mutableStateOf(ScoutingType.MATCH) }
+    var scoutingType by remember { mutableStateOf(DatabaseType.MATCH) }
     Column {
         Row (verticalAlignment = Alignment.CenterVertically) {
             Text("Event Code:")
@@ -173,7 +177,7 @@ fun DatabaseManagementScreen(navController: NavController) {
                     matchSelected = true
                     pitsSelected = false
                     stratSelected = false
-                    scoutingType = ScoutingType.MATCH
+                    scoutingType = DatabaseType.MATCH
                 }) {
                     Row {
                         RadioButton(
@@ -182,7 +186,7 @@ fun DatabaseManagementScreen(navController: NavController) {
                                 matchSelected = true
                                 pitsSelected = false
                                 stratSelected = false
-                                scoutingType = ScoutingType.MATCH
+                                scoutingType = DatabaseType.MATCH
                             }
                         )
                         Text("Match", modifier = Modifier.align(Alignment.CenterVertically), style = textStyleBold)
@@ -192,7 +196,7 @@ fun DatabaseManagementScreen(navController: NavController) {
                     matchSelected = false
                     pitsSelected = true
                     stratSelected = false
-                    scoutingType = ScoutingType.PITS
+                    scoutingType = DatabaseType.PITS
                 }) {
                     Row {
                         RadioButton(
@@ -201,7 +205,7 @@ fun DatabaseManagementScreen(navController: NavController) {
                                 matchSelected = false
                                 pitsSelected = true
                                 stratSelected = false
-                                scoutingType = ScoutingType.PITS
+                                scoutingType = DatabaseType.PITS
                             }
                         )
                         Text("Pits", modifier = Modifier.align(Alignment.CenterVertically), style = textStyleBold)
@@ -211,7 +215,7 @@ fun DatabaseManagementScreen(navController: NavController) {
                     matchSelected = false
                     pitsSelected = false
                     stratSelected = true
-                    scoutingType = ScoutingType.STRAT
+                    scoutingType = DatabaseType.STRATEGY
                 }) {
                     Row {
                         RadioButton(
@@ -220,7 +224,7 @@ fun DatabaseManagementScreen(navController: NavController) {
                                 matchSelected = false
                                 pitsSelected = false
                                 stratSelected = true
-                                scoutingType = ScoutingType.STRAT
+                                scoutingType = DatabaseType.STRATEGY
                             }
                         )
                         Text("Strat", modifier = Modifier.align(Alignment.CenterVertically), style = textStyleBold)
@@ -294,30 +298,29 @@ fun formatKey(key: String): String {
     return finalVal.toString()
 }
 
-fun genExcelFile(eventKey: String, scoutingType: ScoutingType) {
+fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
     val file = File("output-${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}.xlsx")
     val workbook = Workbook(FileOutputStream(file), "Scouting Data", "1.0")
 
     val worksheet = workbook.newWorksheet("Data")
 
-    val matches =
-        if (scoutingType == ScoutingType.MATCH) {
-            manager.getMatchesFromEvent(eventKey)
-        } else if (scoutingType == ScoutingType.PITS) {
-            manager.getPitsForEvent(eventKey)
-        } else if (scoutingType == ScoutingType.STRAT) {
-            manager.getStratForEvent(eventKey)
-        } else {
-            manager.getMatchesFromEvent(eventKey)
-        }
+    val matches = manager.getDataFromEvent(scoutingType, eventKey)
 
     worksheet.value(0, 0, "Match #")
 
     var i = 1
     val keyLocationsHash = HashMap<String, Int>()
-    matches[0].forEach { (key, value) ->
+    val tempMatch = matches[0].toList().toMutableList()
+    tempMatch.forEach { (key, value) ->
         i = generateLocationIndices(key, value, "", keyLocationsHash, i, worksheet)
     }
+
+    matches.sortWith(Comparator { hash1: HashMap<String, Any>, hash2: HashMap<String, Any> ->
+        when (val matchNum = hash1["match"].toString().toInt() - hash2["match"].toString().toInt()) {
+            0 -> try {hash1["robotStartPosition"].toString().toInt().compareTo(hash2["robotStartPosition"].toString().toInt())} catch(_: NumberFormatException) { 0 }
+            else -> matchNum
+        }
+    })
 
     matches.forEach {
         val index = matches.indexOf(it)
@@ -328,15 +331,11 @@ fun genExcelFile(eventKey: String, scoutingType: ScoutingType) {
                 worksheet.value(index+1, 0, value.toString())
                 return@forEach
             }
-            when (value) {
-                is Document -> i = readDocument(worksheet, value, index + 1, i, keyLocationsHash, "$key: ")
-                else -> {
-                    if (key != "_id") {
-                        worksheet.value(index + 1, keyLocationsHash[key]!!, value.toString())
-                        i++
-                    }
-                }
+            if (key == "robotStartPosition") {
+                worksheet.value(index+1, keyLocationsHash[key]!!, startPosToString(value as Int))
+                return@forEach
             }
+            handleValueForExcel(worksheet, it, matches, value, key, index + 1, keyLocationsHash, "", (it["robotStartPosition"] as Int >= 3), parseInt(it["match"] as String), eventKey)
         }
     }
 
@@ -344,12 +343,23 @@ fun genExcelFile(eventKey: String, scoutingType: ScoutingType) {
     workbook.close()
 }
 
-fun handleValue(value: Any, key : String, json: StringBuilder) {
+fun checkScore(sampleScore : Int, realScore: Int, yellowPoint: Int, redPoint: Int) : String {
+    val offBy = (realScore-sampleScore).absoluteValue
+    if (offBy >= yellowPoint && offBy < redPoint && yellowPoint > 0) {
+        return Color.YELLOW
+    }
+    if (offBy >= redPoint) {
+        return Color.RED
+    }
+    return Color.GREEN
+}
+
+fun handleValueForJSON(value: Any, key : String, json: StringBuilder) {
     when (value) {
         is Document -> {
             json.append("\"$key\":{")
             value.forEach { (newKey, newValue) ->
-                handleValue(newValue, newKey, json)
+                handleValueForJSON(newValue, newKey, json)
             }
             json.deleteCharAt(json.lastIndex)
             json.append("},")
@@ -364,34 +374,125 @@ fun handleValue(value: Any, key : String, json: StringBuilder) {
     }
 }
 
+fun generateMatchingMatches(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, blue: Boolean) : ArrayList<HashMap<String, Any>> {
+    val matchNum = match["match"].toString()
+    val matchingMatches = ArrayList<HashMap<String, Any>>()
+    matches.forEach {
+        if (matchNum == it["match"].toString() && blue == (it["robotStartPosition"] as Int >= 3)) {
+            matchingMatches.add(it)
+        }
+    }
+    return matchingMatches
+}
+
+fun calculateScoutedCoralScoreForMatch(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, auto: Boolean, blue: Boolean) : Int {
+    val matchingMatches = generateMatchingMatches(match, matches, blue)
+    var num = 0
+    matchingMatches.forEach {
+        ((it[if (auto) "auto" else "tele"] as Document)["coral"] as Document).forEach {
+            if (it.key.contains("level") && !it.key.contains("missed"))
+                num += it.value as Int
+        }
+    }
+    return num
+}
+
+fun calculateScoutedAlgaeScoreForMatch(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, blue: Boolean) : Int {
+    val matchingMatches = generateMatchingMatches(match, matches, blue)
+    var num = 0
+    matchingMatches.forEach {
+        num += ((it["auto"] as Document)["algae"] as Document)["processed"] as Int * 6
+        num += ((it["tele"] as Document)["algae"] as Document)["processed"] as Int * 6
+    }
+    return num
+}
+
 fun hashToJSONString(hash : HashMap<String, Any>) : String {
     val json = StringBuilder()
-
-    val currentWord = StringBuilder()
-    var lastChar = ' '
-    var inNet = false
-    var inTele = false
-    var inNotes = false
-    var currentType = ""
     json.append("{")
     hash.forEach { (key, value) ->
-        handleValue(value, key, json)
+        handleValueForJSON(value, key, json)
     }
     json.deleteCharAt(json.lastIndex)
     json.append("}")
     return json.toString()
 }
 
-fun readDocument(worksheet: Worksheet, document: Document, currentColumn: Int, currentRow: Int, locationsHash: HashMap<String, Int>, prefix: String) : Int {
-    var row = currentRow
-    document.forEach { (key, value) ->
-        try {
-            value as Document
-            row = readDocument(worksheet, value, currentColumn, row, locationsHash, "$prefix$key: ")
-        } catch (e: ClassCastException) {
-            worksheet.value(currentColumn, locationsHash["$prefix$key"]!!, value.toString())
-            row++
+fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any>, allMatches: List<HashMap<String, Any>>, value: Any, key: String, currentColumn: Int, locationsHash: HashMap<String, Int>, prefix: String, blue: Boolean, match: Int, event: String) {
+    when (value) {
+        is Document -> {
+            value.forEach { (docKey, docValue) ->
+                handleValueForExcel(worksheet, matchDocument, allMatches, docValue, docKey, currentColumn, locationsHash, "$prefix$key: ", blue, match, event)
+            }
+            if (key == "coral") {
+                val inAuto = prefix.contains("auto")
+                val score = calculateScoutedCoralScoreForMatch(matchDocument, allMatches, inAuto, blue)
+                val realScore = getActualScoreFromSection(key, inAuto, blue, event, match)
+                val color = checkScore(score, realScore, 1, if (inAuto) {2} else {3})
+                value.forEach { (docKey, docValue) ->
+                    if (docKey.contains("level") && !docKey.contains("missed"))
+                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color).set()
+                }
+            } else if (key == "algae") {
+                val score = calculateScoutedAlgaeScoreForMatch(matchDocument, allMatches, blue)
+                val realScore = getActualScoreFromSection(key, false, blue, event, match)
+                val color = checkScore(score, realScore, -1, 1)
+                value.forEach { (docKey, docValue) ->
+                    if (docKey.contains("processed"))
+                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color).set()
+                }
+            }
+        }
+        else -> {
+            if (key != "_id") {
+                worksheet.value(currentColumn, locationsHash["$prefix$key"]!!, value.toString())
+            }
         }
     }
-    return row
+}
+
+fun getActualScoreFromSection(key: String, auto: Boolean, blue: Boolean, event: String, matchNum: Int) : Int {
+    val matches = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, event)
+
+    var actualMatch = Document()
+
+    matches.forEach {
+        if (it["match_number"] as Int == matchNum)
+            actualMatch = it["score_breakdown"] as Document
+    }
+
+    when (key) {
+        "coral" -> {
+            return if (auto)
+                if (blue)
+                    (actualMatch["blue"] as Document)["autoCoralCount"] as Int
+                else
+                    (actualMatch["red"] as Document)["autoCoralCount"] as Int
+            else
+                if (blue)
+                    (actualMatch["blue"] as Document)["teleopCoralCount"] as Int
+                else
+                    (actualMatch["red"] as Document)["teleopCoralCount"] as Int
+        }
+        "algae" -> {
+            return if (blue)
+                (actualMatch["blue"] as Document)["algaePoints"] as Int
+            else
+                (actualMatch["red"] as Document)["algaePoints"] as Int
+        }
+    }
+
+    return -1
+}
+
+fun startPosToString(pos: Int) : String {
+    return when (pos) {
+        0 -> "Red 1"
+        1 -> "Red 2"
+        2 -> "Red 3"
+        3 -> "Blue 1"
+        4 -> "Blue 2"
+        5 -> "Blue 3"
+        else -> "Red 1"
+    }
 }
