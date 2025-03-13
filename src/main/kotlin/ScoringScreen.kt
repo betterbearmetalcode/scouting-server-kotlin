@@ -26,7 +26,6 @@ import kotlin.math.round
 
 @Composable
 fun ScoringScreen(navController: NavController) {
-    var eventKey by remember { mutableStateOf("") }
     var showEmptyEventError by remember { mutableStateOf(false) }
     var invalidEventError by remember { mutableStateOf(false) }
     val finalMap : HashMap<String, HashMap<Int, Double>> = remember { HashMap() }
@@ -47,16 +46,16 @@ fun ScoringScreen(navController: NavController) {
     Column {
         Row (verticalAlignment = Alignment.CenterVertically) {
             Text("Event Code:")
-            TextField(value = eventKey, onValueChange = {eventKey = it})
+            TextField(value = eventCode.value, onValueChange = {eventCode.value = it})
         }
         Row {
             Button(onClick = {
                 debug = false
-                if (eventKey.isEmpty()) {
+                if (eventCode.value.isEmpty()) {
                     showEmptyEventError = true
                     return@Button
                 }
-                if (!TBAInterface.isValidEventKey(eventKey)) {
+                if (!TBAInterface.isValidEventKey(eventCode.value)) {
                     invalidEventError = true
                     return@Button
                 }
@@ -64,7 +63,7 @@ fun ScoringScreen(navController: NavController) {
                 play.putIfAbsent(RankType.STRATEGY, HashMap())
                 play.putIfAbsent(RankType.DRIVING_SKILL, HashMap())
                 play.putIfAbsent(RankType.MECHANICAL_SOUNDNESS, HashMap())
-                val stratInfo = manager.getDataFromEvent(DatabaseType.STRATEGY, eventKey)
+                val stratInfo = manager.getDataFromEvent(DatabaseType.STRATEGY, eventCode.value)
 
                 stratInfo.forEach {
                     val strat = it["strategy"] as Document
@@ -102,7 +101,7 @@ fun ScoringScreen(navController: NavController) {
                 Ranker.setPlay(play)
 
                 val hashOfTeamsToRankings: HashMap<Int, EnumMap<RankType, Double>> = HashMap()
-                val teams = manager.getDataFromEvent(DatabaseType.TEAMS, eventKey)
+                val teams = manager.getDataFromEvent(DatabaseType.TEAMS, eventCode.value)
                 teams.forEach {
                     val num = it["team_number"] as Int
                     if (!(play[RankType.STRATEGY]!!.keys.contains(num))) {
@@ -112,15 +111,15 @@ fun ScoringScreen(navController: NavController) {
 
                     hashOfTeamsToRankings[num]!!.putIfAbsent(
                         RankType.STRATEGY,
-                        Ranker(RankType.STRATEGY, num, eventKey).getRank()
+                        Ranker(RankType.STRATEGY, num, eventCode.value).getRank()
                     )
                     hashOfTeamsToRankings[num]!!.putIfAbsent(
                         RankType.DRIVING_SKILL,
-                        Ranker(RankType.DRIVING_SKILL, num, eventKey).getRank()
+                        Ranker(RankType.DRIVING_SKILL, num, eventCode.value).getRank()
                     )
                     hashOfTeamsToRankings[num]!!.putIfAbsent(
                         RankType.MECHANICAL_SOUNDNESS,
-                        Ranker(RankType.MECHANICAL_SOUNDNESS, num, eventKey).getRank()
+                        Ranker(RankType.MECHANICAL_SOUNDNESS, num, eventCode.value).getRank()
                     )
                 }
                 hashOfTeamsToRankings.forEach { (key, value) ->
@@ -129,7 +128,7 @@ fun ScoringScreen(navController: NavController) {
                         finalMap[it.key.toString()]!![key] = it.value
                     }
                 }
-                val matchData = manager.getDataFromEvent(DatabaseType.MATCH, eventKey)
+                val matchData = manager.getDataFromEvent(DatabaseType.MATCH, eventCode.value)
                 teams.forEach {
                     val teamKey = it["team_number"] as Int
                     var totalMatch = 0
@@ -169,6 +168,9 @@ fun ScoringScreen(navController: NavController) {
         }
 
         if (debug) {
+            Button(onClick = {genExcelFile(finalMap)}) {
+                Text("Export")
+            }
             Box(modifier = Modifier.fillMaxWidth()) {
                 Row (modifier = Modifier.align(Alignment.CenterStart)) {
                     Button(onClick = {

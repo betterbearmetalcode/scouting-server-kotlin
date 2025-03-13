@@ -17,6 +17,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle.index
 import org.bson.Document
 import org.dhatim.fastexcel.Color
 import org.dhatim.fastexcel.StyleSetter
@@ -43,10 +44,11 @@ fun convertYesNoToInt(value: String): Int {
     return 0
 }
 
+var eventCode = mutableStateOf("")
+
 @Composable
 fun DatabaseManagementScreen(navController: NavController) {
-    var eventCode by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
+   var showError by remember { mutableStateOf(false) }
     var showEmptyEventError by remember { mutableStateOf(false) }
     var invalidEventError by remember { mutableStateOf(false) }
     var matchSelected by remember { mutableStateOf(true) }
@@ -57,13 +59,13 @@ fun DatabaseManagementScreen(navController: NavController) {
     Column {
         Row (verticalAlignment = Alignment.CenterVertically) {
             Text("Event Code:")
-            TextField(value = eventCode, onValueChange = {eventCode = it})
+            TextField(value = eventCode.value, onValueChange = {eventCode.value = it})
         }
         Row {
             Button(onClick = {
                 try {
-                    manager.pullFromTBA(DatabaseType.TEAMS, eventCode)
-                    manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
+                    manager.pullFromTBA(DatabaseType.TEAMS, eventCode.value)
+                    manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode.value)
                 } catch (e: Exception) {
                     showError = true
                 }
@@ -71,18 +73,18 @@ fun DatabaseManagementScreen(navController: NavController) {
                 Text("Submit")
             }
             Button(onClick = {
-                if (eventCode.isEmpty()) {
+                if (eventCode.value.isEmpty()) {
                     showEmptyEventError = true
                     return@Button
                 }
-                if (!TBAInterface.isValidEventKey(eventCode)) {
+                if (!TBAInterface.isValidEventKey(eventCode.value)) {
                     invalidEventError = true
                     return@Button
                 }
-                manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
-                val tbaData = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, eventCode)
+                manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode.value)
+                val tbaData = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, eventCode.value)
 
-                val matches = manager.getDataFromEvent(DatabaseType.MATCH, eventCode)
+                val matches = manager.getDataFromEvent(DatabaseType.MATCH, eventCode.value)
                 matches.forEach {
                     val matchNum = (it["match"] as String).toInt()
                     tbaData.forEach tba@{ tbaMatch ->
@@ -101,7 +103,10 @@ fun DatabaseManagementScreen(navController: NavController) {
                                             "moved",
                                             convertYesNoToInt(breakdownRed["autoLineRobot1"] as String)
                                         )
-                                    it.put("endPos", breakdownRed["endGameRobot1"])
+                                    val endPos = breakdownRed["endGameRobot1"]
+                                    it.put("parked", endPos == "Parked")
+                                    it.put("shallow", endPos == "ShallowCage")
+                                    it.put("deep", endPos == " DeepCage")
                                 }
 
                                 1 -> {
@@ -110,7 +115,10 @@ fun DatabaseManagementScreen(navController: NavController) {
                                             "moved",
                                             convertYesNoToInt(breakdownRed["autoLineRobot2"] as String)
                                         )
-                                    it.put("endPos", breakdownRed["endGameRobot2"])
+                                    val endPos = breakdownRed["endGameRobot2"]
+                                    it.put("parked", endPos == "Parked")
+                                    it.put("shallow", endPos == "ShallowCage")
+                                    it.put("deep", endPos == " DeepCage")
                                 }
 
                                 2 -> {
@@ -119,7 +127,10 @@ fun DatabaseManagementScreen(navController: NavController) {
                                             "moved",
                                             convertYesNoToInt(breakdownRed["autoLineRobot3"] as String)
                                         )
-                                    it.put("endPos", breakdownRed["endGameRobot3"])
+                                    val endPos = breakdownRed["endGameRobot3"]
+                                    it.put("parked", endPos == "Parked")
+                                    it.put("shallow", endPos == "ShallowCage")
+                                    it.put("deep", endPos == " DeepCage")
                                 }
 
                                 3 -> {
@@ -128,7 +139,10 @@ fun DatabaseManagementScreen(navController: NavController) {
                                             "moved",
                                             convertYesNoToInt(breakdownBlue["autoLineRobot1"] as String)
                                         )
-                                    it.put("endPos", breakdownBlue["endGameRobot1"])
+                                    val endPos = breakdownBlue["endGameRobot1"]
+                                    it.put("parked", endPos == "Parked")
+                                    it.put("shallow", endPos == "ShallowCage")
+                                    it.put("deep", endPos == " DeepCage")
                                 }
 
                                 4 -> {
@@ -137,7 +151,10 @@ fun DatabaseManagementScreen(navController: NavController) {
                                             "moved",
                                             convertYesNoToInt(breakdownBlue["autoLineRobot2"] as String)
                                         )
-                                    it.put("endPos", breakdownBlue["endGameRobot2"])
+                                    val endPos = breakdownBlue["endGameRobot2"]
+                                    it.put("parked", endPos == "Parked")
+                                    it.put("shallow", endPos == "ShallowCage")
+                                    it.put("deep", endPos == " DeepCage")
                                 }
 
                                 5 -> {
@@ -146,7 +163,10 @@ fun DatabaseManagementScreen(navController: NavController) {
                                             "moved",
                                             convertYesNoToInt(breakdownBlue["autoLineRobot3"] as String)
                                         )
-                                    it.put("endPos", breakdownBlue["endGameRobot3"])
+                                    val endPos = breakdownBlue["endGameRobot3"]
+                                    it.put("parked", endPos == "Parked")
+                                    it.put("shallow", endPos == "ShallowCage")
+                                    it.put("deep", endPos == " DeepCage")
                                 }
                             }
                         } catch (e: NullPointerException) {
@@ -154,7 +174,7 @@ fun DatabaseManagementScreen(navController: NavController) {
                         }
                     }
                     val string = hashToJSONString(it)
-                    manager.processJSON(DatabaseType.MATCH, string, eventCode)
+                    manager.processJSON(DatabaseType.MATCH, string, eventCode.value)
                 }
             }) {
                 Text("Update stop and endgame with TBA")
@@ -163,10 +183,10 @@ fun DatabaseManagementScreen(navController: NavController) {
         Row {
             Button(
                 onClick = {
-                    if (eventCode.isEmpty())
+                    if (eventCode.value.isEmpty())
                         showEmptyEventError = true
                     else
-                        genExcelFile(eventCode, scoutingType)
+                        genExcelFile(eventCode.value, scoutingType)
                 },
                 modifier = Modifier.align(Alignment.CenterVertically)
             ) {
@@ -310,8 +330,18 @@ fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
 
     var i = 1
     val keyLocationsHash = HashMap<String, Int>()
-    val tempMatch = matches[0].toList().toMutableList()
-    tempMatch.forEach { (key, value) ->
+    val tempMatch = matches[0].toList()
+    val sortedKeys = tempMatch.sortedBy {
+        if (it.first == "team") 0
+        else if (it.first == "robotStartPosition") 1
+        else if (it.first == "auto") 2
+        else if (it.first == "tele") 3
+        else if (it.first == "parked") 4
+        else if (it.first == "shallow") 5
+        else if (it.first == "deep") 6
+        else Integer.MAX_VALUE
+    }
+    sortedKeys.forEach { (key, value) ->
         i = generateLocationIndices(key, value, "", keyLocationsHash, i, worksheet)
     }
 
@@ -324,7 +354,6 @@ fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
 
     matches.forEach {
         val index = matches.indexOf(it)
-        worksheet.value(index+1, 0, index+1)
         i = 1
         it.forEach { (key, value) ->
             if (key == "match") {
@@ -343,16 +372,63 @@ fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
     workbook.close()
 }
 
-fun checkScore(sampleScore : Int, realScore: Int, yellowPoint: Int, redPoint: Int) : String {
+fun genExcelFile(stratData: Map<String, Map<Int, Double>>) {
+    val file = File("output-${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}.xlsx")
+    val workbook = Workbook(FileOutputStream(file), "Scouting Data", "1.0")
+
+    val worksheet = workbook.newWorksheet("Data")
+
+    worksheet.value(0, 1, "Strategy")
+    worksheet.value(0, 2, "Mechanical Soundness")
+    worksheet.value(0, 3, "Driving Skill")
+
+    var row = 1
+    val strategy = stratData["STRATEGY"]
+    val mech = stratData["MECHANICAL_SOUNDNESS"]
+    val driving = stratData["DRIVING_SKILL"]
+
+    strategy!!.forEach { (key, value) ->
+        worksheet.value(row, 0, key)
+        worksheet.value(row, 1, value.toString())
+        row++
+    }
+    row = 1
+    mech!!.forEach { (key, value) ->
+        worksheet.value(row, 2, value.toString())
+        row++
+    }
+    row = 1
+    driving!!.forEach { (key, value) ->
+        worksheet.value(row, 3, value.toString())
+        row++
+    }
+
+    workbook.finish()
+    workbook.close()
+}
+
+enum class ScoreErrorLevel(val color: String) {
+    GREEN(Color.GREEN),
+    YELLOW(Color.YELLOW),
+    RED(Color.RED);
+
+    override fun toString(): String {
+        return this.color
+    }
+}
+
+fun checkScore(sampleScore : Int, realScore: Int, yellowPoint: Int, redPoint: Int) : ScoreErrorLevel {
     val offBy = (realScore-sampleScore).absoluteValue
     if (offBy >= yellowPoint && offBy < redPoint && yellowPoint > 0) {
-        return Color.YELLOW
+        return ScoreErrorLevel.YELLOW
     }
     if (offBy >= redPoint) {
-        return Color.RED
+        return ScoreErrorLevel.RED
     }
-    return Color.GREEN
+    return ScoreErrorLevel.GREEN
 }
+
+
 
 fun handleValueForJSON(value: Any, key : String, json: StringBuilder) {
     when (value) {
@@ -431,7 +507,7 @@ fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any
                 val color = checkScore(score, realScore, 1, if (inAuto) {2} else {3})
                 value.forEach { (docKey, docValue) ->
                     if (docKey.contains("level") && !docKey.contains("missed"))
-                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color).set()
+                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color.toString()).set()
                 }
             } else if (key == "algae") {
                 val score = calculateScoutedAlgaeScoreForMatch(matchDocument, allMatches, blue)
@@ -439,9 +515,12 @@ fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any
                 val color = checkScore(score, realScore, -1, 1)
                 value.forEach { (docKey, docValue) ->
                     if (docKey.contains("processed"))
-                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color).set()
+                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color.toString()).set()
                 }
             }
+        }
+        is Boolean -> {
+            worksheet.value(currentColumn, locationsHash["$prefix$key"]!!, if (value) 1 else 0)
         }
         else -> {
             if (key != "_id") {

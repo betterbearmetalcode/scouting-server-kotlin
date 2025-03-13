@@ -19,7 +19,7 @@ repositories {
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha10")
-    implementation("com.github.betterbearmetalcode:koala:dev-03.1.25-1")
+    implementation("com.github.betterbearmetalcode:koala:c654872")
     implementation("ch.qos.logback:logback-classic:1.5.15")
     implementation("org.dhatim:fastexcel:0.18.4")
     implementation("org.mongodb:mongodb-driver-sync:5.2.1")
