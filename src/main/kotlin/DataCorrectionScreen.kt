@@ -9,7 +9,7 @@ import org.tahomarobotics.scouting.DatabaseType
 
 @Composable
 fun DataCorrectionScreen(navController: NavController) {
-    val matchesWithError = remember { ArrayList<HashMap<String, Any>>() }
+    val matchesWithError = remember { ArrayList<Pair<HashMap<String, Any>, Array<ScoreErrorLevel>>>() }
     Column {
         if (matchesWithError.isEmpty()) {
             val allMatches = manager.getDataFromEvent(DatabaseType.MATCH, eventCode.value)
@@ -26,7 +26,7 @@ fun DataCorrectionScreen(navController: NavController) {
                 val teleCoralErrorLevel = checkScore(teleCoralScoutScore, teleCoralActual, 1, 3)
                 val algaeErrorLevel = checkScore(algaeScoutScore, algaeActual, -1, 1)
                 if (ScoreErrorLevel.GREEN !in listOf(autoCoralErrorLevel, teleCoralErrorLevel, algaeErrorLevel))
-                    matchesWithError.add(it)
+                    matchesWithError.add(Pair(it, arrayOf(autoCoralErrorLevel, teleCoralErrorLevel, algaeErrorLevel)))
             }
         }
         Button(onClick = {navController.navigateUp()}) {
@@ -35,7 +35,7 @@ fun DataCorrectionScreen(navController: NavController) {
         LazyColumn {
             matchesWithError.forEach {
                 item {
-                    Text("Match # ${it["match"]} has error")
+                    Text("Match # ${it.first["match"]} has a maximum error level of ${if (it.second.contains(ScoreErrorLevel.RED)) "Red" else "Yellow"}")
                 }
             }
         }

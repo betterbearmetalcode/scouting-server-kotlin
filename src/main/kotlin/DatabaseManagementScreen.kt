@@ -1,5 +1,7 @@
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.RadioButton
@@ -57,9 +59,14 @@ fun DatabaseManagementScreen(navController: NavController) {
     var textStyleBold = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
     var scoutingType by remember { mutableStateOf(DatabaseType.MATCH) }
     Column {
-        Row (verticalAlignment = Alignment.CenterVertically) {
-            Text("Event Code:")
-            TextField(value = eventCode.value, onValueChange = {eventCode.value = it})
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.align(Alignment.CenterStart)) {
+                Text("Event Code:")
+                TextField(value = eventCode.value, onValueChange = { eventCode.value = it })
+            }
+            Button(onClick = {navController.navigate(CorrectionScreen)}, modifier = Modifier.align(Alignment.CenterEnd)) {
+                Text("Correct Data")
+            }
         }
         Row {
             Button(onClick = {
@@ -410,7 +417,8 @@ fun genExcelFile(stratData: Map<String, Map<Int, Double>>) {
 enum class ScoreErrorLevel(val color: String) {
     GREEN(Color.GREEN),
     YELLOW(Color.YELLOW),
-    RED(Color.RED);
+    RED(Color.RED),
+    ERROR(Color.GRAY5);
 
     override fun toString(): String {
         return this.color
@@ -418,6 +426,8 @@ enum class ScoreErrorLevel(val color: String) {
 }
 
 fun checkScore(sampleScore : Int, realScore: Int, yellowPoint: Int, redPoint: Int) : ScoreErrorLevel {
+    if (realScore == -1)
+        return ScoreErrorLevel.ERROR
     val offBy = (realScore-sampleScore).absoluteValue
     if (offBy >= yellowPoint && offBy < redPoint && yellowPoint > 0) {
         return ScoreErrorLevel.YELLOW
@@ -536,8 +546,13 @@ fun getActualScoreFromSection(key: String, auto: Boolean, blue: Boolean, event: 
     var actualMatch = Document()
 
     matches.forEach {
-        if (it["match_number"] as Int == matchNum)
-            actualMatch = it["score_breakdown"] as Document
+        if (it["match_number"] as Int == matchNum) {
+            try {
+                actualMatch = it["score_breakdown"] as Document
+            } catch (e: NullPointerException) {
+                return -1
+            }
+        }
     }
 
     when (key) {

@@ -39,6 +39,9 @@ fun App() {
             composable(route = ScoringScreen) {
                 ScoringScreen(navController)
             }
+            composable(route = CorrectionScreen) {
+                DataCorrectionScreen(navController)
+            }
         }
     }
 }

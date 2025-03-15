@@ -15,25 +15,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonElement
+import composables.Accordian
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.bson.json.JsonObject
 import org.tahomarobotics.scouting.Server
 import java.net.InetAddress
-
 
 
 @Composable
 fun DataCollectionScreen(navController: NavHostController) {
     var showIpDialog by remember { mutableStateOf(false) }
     var ipSubmitted by remember { mutableStateOf(false) }
-    var serverStarted by remember { mutableStateOf(server?.isRunning == true) }
+    var serverStarted = server?.isRunning == true
     var ip by remember { mutableStateOf(server?.inetAddress?.hostAddress ?: "") }
     val dataReceived = remember { mutableStateListOf<String>() }
     var serverRunningText by remember { if (serverStarted) { mutableStateOf("Server Running on $ip") } else { mutableStateOf("Server Disabled") } }
     val textStyleRed = TextStyle(color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 18.sp)
     val textStyleGreen = TextStyle(color = Color(0,175,0), fontWeight = FontWeight.Bold, fontSize = 18.sp)
     var serverRunningTextStyle by remember { if (serverStarted) {mutableStateOf(textStyleGreen)} else { mutableStateOf(textStyleRed) } }
+
     Box {
         val scope = CoroutineScope(Dispatchers.Default)
         Column (modifier = Modifier.align(Alignment.TopStart)) {
@@ -60,9 +65,41 @@ fun DataCollectionScreen(navController: NavHostController) {
             }
 
             LazyColumn {
+                var i = 0
+                val gson = GsonBuilder().setPrettyPrinting().create()
                 dataReceived.forEach {
                     item {
-                        Text(it)
+                        var accordian = true
+                        var header = ""
+                        var data : com.google.gson.JsonObject = com.google.gson.JsonObject()
+                        try {
+                            val jsonObject = gson.fromJson(it, com.google.gson.JsonObject::class.java)!!;
+
+                            try {
+                                val headerElement: JsonElement? = jsonObject["header"]
+
+                                header = headerElement!!.getAsJsonObject().get("h0").asString
+                            } catch (_: NullPointerException) {
+                            }
+
+                            val temp = jsonObject["data"].toString()
+                            data = gson.fromJson(temp, com.google.gson.JsonObject::class.java)
+                        } catch (_ : NullPointerException) {
+                            accordian = false
+                        }
+                        if (accordian) {
+                            when (header) {
+                                "match" -> {
+                                    Accordian(labelContents = {
+                                        Text("Match #${data["match"].asString.replace("\"", "") } at position ${startPosToString(data["robotStartPosition"].asInt)}. Team #${data["team"].asString.replace("\"", "")}")
+                                    }, innerContents = {
+                                        Text(gson.toJson(data, ))
+                                    })
+                                }
+                            }
+                        } else {
+                            Text("Error displaying data for this match")
+                        }
                     }
                 }
             }

@@ -5,6 +5,7 @@ const val ChartName = "charts"
 const val DataCollectionName = "data_collection"
 const val DataManagementName = "data_management"
 const val ScoringScreen = "scoring"
+const val CorrectionScreen = "correct"
 
 fun String.betterParseDouble(maxLength: Int = 10): Double {
     val stringBuilder = StringBuilder()
