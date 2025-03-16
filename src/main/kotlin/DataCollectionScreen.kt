@@ -91,7 +91,7 @@ fun DataCollectionScreen(navController: NavHostController) {
                             when (header) {
                                 "match" -> {
                                     Accordian(labelContents = {
-                                        Text("Match #${data["match"].asString.replace("\"", "") } at position ${startPosToString(data["robotStartPosition"].asInt)}. Team #${data["team"].asString.replace("\"", "")}")
+                                        Text("Match #${data["match"].asString.replace("\"", "") } at position ${startPosToString(data["robotStartPosition"].asInt)}. Team #${data["team"].asString.replace("\"", "")}", fontSize = 15.sp)
                                     }, innerContents = {
                                         Text(gson.toJson(data, ))
                                     })

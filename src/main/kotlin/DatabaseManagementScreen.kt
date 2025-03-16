@@ -2,27 +2,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.Button
-import androidx.compose.material.RadioButton
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
-import androidx.compose.material.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle.index
 import org.bson.Document
 import org.dhatim.fastexcel.Color
-import org.dhatim.fastexcel.StyleSetter
 import org.dhatim.fastexcel.Workbook
 import org.dhatim.fastexcel.Worksheet
 import org.tahomarobotics.scouting.DatabaseType
@@ -33,12 +22,6 @@ import java.lang.Integer.parseInt
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.absoluteValue
-
-enum class ScoutingType {
-    MATCH,
-    PITS,
-    STRAT
-}
 
 fun convertYesNoToInt(value: String): Int {
     if (value.lowercase() == "yes")
@@ -371,7 +354,10 @@ fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
                 worksheet.value(index+1, keyLocationsHash[key]!!, startPosToString(value as Int))
                 return@forEach
             }
-            handleValueForExcel(worksheet, it, matches, value, key, index + 1, keyLocationsHash, "", (it["robotStartPosition"] as Int >= 3), parseInt(it["match"] as String), eventKey)
+            if (scoutingType == DatabaseType.MATCH)
+                handleValueForExcel(worksheet, it, matches, value, key, index + 1, keyLocationsHash, "", (it["robotStartPosition"] as Int >= 3), parseInt(it["match"] as String), eventKey)
+            else if (scoutingType == DatabaseType.STRATEGY)
+                handleValueForExcel(worksheet, it, matches, value, key, index + 1, keyLocationsHash, "", (it["is_red_alliance"] as Boolean), it["match"] as Int, eventKey)
         }
     }
 
@@ -425,6 +411,13 @@ enum class ScoreErrorLevel(val color: String) {
     }
 }
 
+enum class ReefLevel(val tbaKey: String, val key: String) {
+    TOP("tba_topRowCount", "reef_level4"),
+    MID("tba_midRowCount", "reef_level3"),
+    LOW("tba_botRowCount", "reef_level2"),
+    TROUGH("trough", "reef_level1")
+}
+
 fun checkScore(sampleScore : Int, realScore: Int, yellowPoint: Int, redPoint: Int) : ScoreErrorLevel {
     if (realScore == -1)
         return ScoreErrorLevel.ERROR
@@ -471,12 +464,14 @@ fun generateMatchingMatches(match: HashMap<String, Any>, matches: List<HashMap<S
     return matchingMatches
 }
 
-fun calculateScoutedCoralScoreForMatch(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, auto: Boolean, blue: Boolean) : Int {
+
+
+fun calculateScoutedCoralScoreForMatch(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, auto: Boolean, blue: Boolean, level: ReefLevel) : Int {
     val matchingMatches = generateMatchingMatches(match, matches, blue)
     var num = 0
     matchingMatches.forEach {
         ((it[if (auto) "auto" else "tele"] as Document)["coral"] as Document).forEach {
-            if (it.key.contains("level") && !it.key.contains("missed"))
+            if (it.key == level.key)
                 num += it.value as Int
         }
     }
@@ -512,12 +507,23 @@ fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any
             }
             if (key == "coral") {
                 val inAuto = prefix.contains("auto")
-                val score = calculateScoutedCoralScoreForMatch(matchDocument, allMatches, inAuto, blue)
-                val realScore = getActualScoreFromSection(key, inAuto, blue, event, match)
-                val color = checkScore(score, realScore, 1, if (inAuto) {2} else {3})
+
                 value.forEach { (docKey, docValue) ->
-                    if (docKey.contains("level") && !docKey.contains("missed"))
-                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color.toString()).set()
+                    var level : ReefLevel? = null
+                    when (docKey) {
+                        "reef_level1" -> level = ReefLevel.TROUGH
+                        "reef_level2" -> level = ReefLevel.LOW
+                        "reef_level3" -> level = ReefLevel.MID
+                        "reef_level4" -> level = ReefLevel.TOP
+                    }
+
+                    if (level != null) {
+                        val score = calculateScoutedCoralScoreForMatch(matchDocument, allMatches, inAuto, blue, level)
+                        val realScore = getActualCoral(level, inAuto, blue, event, match)
+                        val color = checkScore(score, realScore, 1, if (inAuto) {2} else {3})
+                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!)
+                            .fillColor(color.toString()).set()
+                    }
                 }
             } else if (key == "algae") {
                 val score = calculateScoutedAlgaeScoreForMatch(matchDocument, allMatches, blue)
@@ -538,6 +544,24 @@ fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any
             }
         }
     }
+}
+
+fun getActualCoral(level: ReefLevel, auto: Boolean, blue: Boolean, event: String, matchNum: Int) : Int {
+    val matches = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, event)
+
+    var actualMatch = Document()
+
+    matches.forEach {
+        if (it["match_number"] as Int == matchNum) {
+            try {
+                actualMatch = ((it["score_breakdown"] as Document)[if (blue) "blue" else "red"] as Document)[if (auto) "autoReef" else "teleopReef"] as Document
+            } catch (_: NullPointerException) {
+                return -1
+            }
+        }
+    }
+
+    return actualMatch[level.tbaKey] as Int
 }
 
 fun getActualScoreFromSection(key: String, auto: Boolean, blue: Boolean, event: String, matchNum: Int) : Int {

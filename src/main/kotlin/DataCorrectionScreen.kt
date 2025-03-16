@@ -16,17 +16,17 @@ fun DataCorrectionScreen(navController: NavController) {
             allMatches.forEach {
                 val blue = it["robotStartPosition"] as Int >= 3
                 val matchNum = it["match"].toString().toInt()
-                val autoCoralScoutScore = calculateScoutedCoralScoreForMatch(it, allMatches, true, blue)
-                val teleCoralScoutScore = calculateScoutedCoralScoreForMatch(it, allMatches, false, blue)
-                val algaeScoutScore = calculateScoutedAlgaeScoreForMatch(it, allMatches, blue)
-                val autoCoralActual = getActualScoreFromSection("coral", true, blue, eventCode.value, matchNum)
-                val teleCoralActual = getActualScoreFromSection("coral", false, blue, eventCode.value, matchNum)
-                val algaeActual = getActualScoreFromSection("algae", false, blue, eventCode.value, matchNum)
-                val autoCoralErrorLevel = checkScore(autoCoralScoutScore, autoCoralActual, 1, 2)
-                val teleCoralErrorLevel = checkScore(teleCoralScoutScore, teleCoralActual, 1, 3)
-                val algaeErrorLevel = checkScore(algaeScoutScore, algaeActual, -1, 1)
-                if (ScoreErrorLevel.GREEN !in listOf(autoCoralErrorLevel, teleCoralErrorLevel, algaeErrorLevel))
-                    matchesWithError.add(Pair(it, arrayOf(autoCoralErrorLevel, teleCoralErrorLevel, algaeErrorLevel)))
+//                val autoCoralScoutScore = calculateScoutedCoralScoreForMatch(it, allMatches, true, blue)
+//                val teleCoralScoutScore = calculateScoutedCoralScoreForMatch(it, allMatches, false, blue)
+//                val algaeScoutScore = calculateScoutedAlgaeScoreForMatch(it, allMatches, blue)
+//                val autoCoralActual = getActualScoreFromSection("coral", true, blue, eventCode.value, matchNum)
+//                val teleCoralActual = getActualScoreFromSection("coral", false, blue, eventCode.value, matchNum)
+//                val algaeActual = getActualScoreFromSection("algae", false, blue, eventCode.value, matchNum)
+//                val autoCoralErrorLevel = checkScore(autoCoralScoutScore, autoCoralActual, 1, 2)
+//                val teleCoralErrorLevel = checkScore(teleCoralScoutScore, teleCoralActual, 1, 3)
+//                val algaeErrorLevel = checkScore(algaeScoutScore, algaeActual, -1, 1)
+//                if (ScoreErrorLevel.GREEN !in listOf(autoCoralErrorLevel, teleCoralErrorLevel, algaeErrorLevel))
+//                    matchesWithError.add(Pair(it, arrayOf(autoCoralErrorLevel, teleCoralErrorLevel, algaeErrorLevel)))
             }
         }
         Button(onClick = {navController.navigateUp()}) {
