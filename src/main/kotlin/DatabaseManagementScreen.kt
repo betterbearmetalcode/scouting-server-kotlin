@@ -10,6 +10,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.google.gson.Gson
 import org.bson.Document
 import org.dhatim.fastexcel.Color
 import org.dhatim.fastexcel.Workbook
@@ -85,75 +86,23 @@ fun DatabaseManagementScreen(navController: NavController) {
                             val breakdownBlue = breakdown["blue"]!! as Document
                             val breakdownRed = breakdown["red"]!! as Document
 
-                            val startPos = it["robotStartPosition"] as Int
-                            when (startPos) {
-                                0 -> {
-                                    (it["auto"] as Document)
-                                        .putIfAbsent(
-                                            "moved",
-                                            convertYesNoToInt(breakdownRed["autoLineRobot1"] as String)
-                                        )
-                                    val endPos = breakdownRed["endGameRobot1"]
+                            when (val startPos = it["robotStartPosition"] as Int) {
+                                0, 1, 2 -> {
+                                    (it["auto"] as Document)["moved"] = convertYesNoToInt(breakdownRed["autoLineRobot${startPos + 1}"] as String)
+                                    
+                                    val endPos = breakdownRed["endGameRobot${startPos + 1}"] as String
+                                    println("end pos: $endPos")
+                                    
                                     it.put("parked", endPos == "Parked")
                                     it.put("shallow", endPos == "ShallowCage")
-                                    it.put("deep", endPos == " DeepCage")
+                                    it.put("deep", endPos == "DeepCage")
+                                    println("poses: $it")
                                 }
 
-                                1 -> {
-                                    (it["auto"] as Document)
-                                        .putIfAbsent(
-                                            "moved",
-                                            convertYesNoToInt(breakdownRed["autoLineRobot2"] as String)
-                                        )
-                                    val endPos = breakdownRed["endGameRobot2"]
-                                    it.put("parked", endPos == "Parked")
-                                    it.put("shallow", endPos == "ShallowCage")
-                                    it.put("deep", endPos == " DeepCage")
-                                }
+                                3, 4, 5 -> {
+                                    (it["auto"] as Document)["moved"] = convertYesNoToInt(breakdownBlue["autoLineRobot${startPos - 2}"] as String)
 
-                                2 -> {
-                                    (it["auto"] as Document)
-                                        .putIfAbsent(
-                                            "moved",
-                                            convertYesNoToInt(breakdownRed["autoLineRobot3"] as String)
-                                        )
-                                    val endPos = breakdownRed["endGameRobot3"]
-                                    it.put("parked", endPos == "Parked")
-                                    it.put("shallow", endPos == "ShallowCage")
-                                    it.put("deep", endPos == " DeepCage")
-                                }
-
-                                3 -> {
-                                    (it["auto"] as Document)
-                                        .putIfAbsent(
-                                            "moved",
-                                            convertYesNoToInt(breakdownBlue["autoLineRobot1"] as String)
-                                        )
-                                    val endPos = breakdownBlue["endGameRobot1"]
-                                    it.put("parked", endPos == "Parked")
-                                    it.put("shallow", endPos == "ShallowCage")
-                                    it.put("deep", endPos == " DeepCage")
-                                }
-
-                                4 -> {
-                                    (it["auto"] as Document)
-                                        .putIfAbsent(
-                                            "moved",
-                                            convertYesNoToInt(breakdownBlue["autoLineRobot2"] as String)
-                                        )
-                                    val endPos = breakdownBlue["endGameRobot2"]
-                                    it.put("parked", endPos == "Parked")
-                                    it.put("shallow", endPos == "ShallowCage")
-                                    it.put("deep", endPos == " DeepCage")
-                                }
-
-                                5 -> {
-                                    (it["auto"] as Document)
-                                        .putIfAbsent(
-                                            "moved",
-                                            convertYesNoToInt(breakdownBlue["autoLineRobot3"] as String)
-                                        )
-                                    val endPos = breakdownBlue["endGameRobot3"]
+                                    val endPos = breakdownBlue["endGameRobot${startPos - 2}"] as String
                                     it.put("parked", endPos == "Parked")
                                     it.put("shallow", endPos == "ShallowCage")
                                     it.put("deep", endPos == " DeepCage")
@@ -299,13 +248,18 @@ fun generateLocationIndices(key: String, value: Any, prefix: String, hash: HashM
 }
 
 fun formatKey(key: String): String {
-    var temp = key.replace("_", " ")
-    val words = temp.split(" ")
-    val finalVal = StringBuilder()
-    for (word in words) {
-        finalVal.append(word[0].uppercaseChar() + word.drop(1) + " ")
+    try {
+        var temp = key.replace("_", " ")
+        val words = temp.split(" ")
+        val finalVal = StringBuilder()
+        for (word in words) {
+            finalVal.append(word[0].uppercaseChar() + word.drop(1) + " ")
+        }
+        return finalVal.toString()
+    } catch (e: Exception) {
+        println("Found an error. AHHHHHH!: ${e.message}")
+        return ""
     }
-    return finalVal.toString()
 }
 
 fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
