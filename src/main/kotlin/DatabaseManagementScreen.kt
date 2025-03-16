@@ -478,12 +478,17 @@ fun calculateScoutedCoralScoreForMatch(match: HashMap<String, Any>, matches: Lis
     return num
 }
 
-fun calculateScoutedAlgaeScoreForMatch(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, blue: Boolean) : Int {
+fun calculateScoutedAlgaeScoreForMatch(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, blue: Boolean, net: Boolean) : Int {
     val matchingMatches = generateMatchingMatches(match, matches, blue)
     var num = 0
     matchingMatches.forEach {
-        num += ((it["auto"] as Document)["algae"] as Document)["processed"] as Int * 6
-        num += ((it["tele"] as Document)["algae"] as Document)["processed"] as Int * 6
+        if (net) {
+            num += ((it["auto"] as Document)["net"] as Document)["scored"] as Int
+            num += ((it["tele"] as Document)["net"] as Document)["scored"] as Int
+        } else {
+            num += ((it["auto"] as Document)["algae"] as Document)["processed"] as Int
+            num += ((it["tele"] as Document)["algae"] as Document)["processed"] as Int
+        }
     }
     return num
 }
@@ -526,11 +531,19 @@ fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any
                     }
                 }
             } else if (key == "algae") {
-                val score = calculateScoutedAlgaeScoreForMatch(matchDocument, allMatches, blue)
-                val realScore = getActualScoreFromSection(key, false, blue, event, match)
+                val score = calculateScoutedAlgaeScoreForMatch(matchDocument, allMatches, blue, false)
+                val realScore = getActualAlgae(false, blue, event, match)
                 val color = checkScore(score, realScore, -1, 1)
                 value.forEach { (docKey, docValue) ->
                     if (docKey.contains("processed"))
+                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color.toString()).set()
+                }
+            } else if (key == "net") {
+                val score = calculateScoutedAlgaeScoreForMatch(matchDocument, allMatches, blue, true)
+                val realScore = getActualAlgae(true, blue, event, match)
+                val color = checkScore(score, realScore, -1, 1)
+                value.forEach { (docKey, docValue) ->
+                    if (docKey.contains("scored"))
                         worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color.toString()).set()
                 }
             }
@@ -564,6 +577,23 @@ fun getActualCoral(level: ReefLevel, auto: Boolean, blue: Boolean, event: String
     return actualMatch[level.tbaKey] as Int
 }
 
+fun getActualAlgae(net: Boolean, blue: Boolean, event: String, matchNum: Int) : Int {
+    val matches = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, event)
+
+    var actualMatch = Document()
+
+    matches.forEach {
+        if (it["match_number"] as Int == matchNum) {
+            try {
+                actualMatch = (it["score_breakdown"] as Document)[if (blue) "blue" else "red"] as Document
+            } catch (_: NullPointerException) {
+                return -1
+            }
+        }
+    }
+
+    return actualMatch[if (net) "netAlgaeCount" else "wallAlgaeCount"] as Int
+}
 fun getActualScoreFromSection(key: String, auto: Boolean, blue: Boolean, event: String, matchNum: Int) : Int {
     val matches = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, event)
 
