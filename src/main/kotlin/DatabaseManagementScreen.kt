@@ -105,7 +105,7 @@ fun DatabaseManagementScreen(navController: NavController) {
                                     val endPos = breakdownBlue["endGameRobot${startPos - 2}"] as String
                                     it.put("parked", endPos == "Parked")
                                     it.put("shallow", endPos == "ShallowCage")
-                                    it.put("deep", endPos == " DeepCage")
+                                    it.put("deep", endPos == "DeepCage")
                                 }
                             }
                         } catch (e: NullPointerException) {
@@ -248,18 +248,13 @@ fun generateLocationIndices(key: String, value: Any, prefix: String, hash: HashM
 }
 
 fun formatKey(key: String): String {
-    try {
-        var temp = key.replace("_", " ")
-        val words = temp.split(" ")
-        val finalVal = StringBuilder()
-        for (word in words) {
-            finalVal.append(word[0].uppercaseChar() + word.drop(1) + " ")
-        }
-        return finalVal.toString()
-    } catch (e: Exception) {
-        println("Found an error. AHHHHHH!: ${e.message}")
-        return ""
+    var temp = key.replace("_", " ")
+    val words = temp.split(" ")
+    val finalVal = StringBuilder()
+    for (word in words) {
+        finalVal.append(word[0].uppercaseChar() + word.drop(1) + " ")
     }
+    return finalVal.toString()
 }
 
 fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
@@ -385,8 +380,6 @@ fun checkScore(sampleScore : Int, realScore: Int, yellowPoint: Int, redPoint: In
     return ScoreErrorLevel.GREEN
 }
 
-
-
 fun handleValueForJSON(value: Any, key : String, json: StringBuilder) {
     when (value) {
         is Document -> {
@@ -417,8 +410,6 @@ fun generateMatchingMatches(match: HashMap<String, Any>, matches: List<HashMap<S
     }
     return matchingMatches
 }
-
-
 
 fun calculateScoutedCoralScoreForMatch(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, auto: Boolean, blue: Boolean, level: ReefLevel) : Int {
     val matchingMatches = generateMatchingMatches(match, matches, blue)
@@ -547,44 +538,6 @@ fun getActualAlgae(net: Boolean, blue: Boolean, event: String, matchNum: Int) : 
     }
 
     return actualMatch[if (net) "netAlgaeCount" else "wallAlgaeCount"] as Int
-}
-fun getActualScoreFromSection(key: String, auto: Boolean, blue: Boolean, event: String, matchNum: Int) : Int {
-    val matches = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, event)
-
-    var actualMatch = Document()
-
-    matches.forEach {
-        if (it["match_number"] as Int == matchNum) {
-            try {
-                actualMatch = it["score_breakdown"] as Document
-            } catch (e: NullPointerException) {
-                return -1
-            }
-        }
-    }
-
-    when (key) {
-        "coral" -> {
-            return if (auto)
-                if (blue)
-                    (actualMatch["blue"] as Document)["autoCoralCount"] as Int
-                else
-                    (actualMatch["red"] as Document)["autoCoralCount"] as Int
-            else
-                if (blue)
-                    (actualMatch["blue"] as Document)["teleopCoralCount"] as Int
-                else
-                    (actualMatch["red"] as Document)["teleopCoralCount"] as Int
-        }
-        "algae" -> {
-            return if (blue)
-                (actualMatch["blue"] as Document)["algaePoints"] as Int
-            else
-                (actualMatch["red"] as Document)["algaePoints"] as Int
-        }
-    }
-
-    return -1
 }
 
 fun startPosToString(pos: Int) : String {
