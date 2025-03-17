@@ -93,8 +93,15 @@ fun DataCollectionScreen(navController: NavHostController) {
                                     Accordian(labelContents = {
                                         Text("Match #${data["match"].asString.replace("\"", "") } at position ${startPosToString(data["robotStartPosition"].asInt)}. Team #${data["team"].asString.replace("\"", "")}", fontSize = 15.sp)
                                     }, innerContents = {
-                                        Text(gson.toJson(data, ))
+                                        Text(gson.toJson(data))
                                     })
+                                }
+                                "strat" -> {
+                                    Accordian(labelContents = {
+                                        Text("Strategy Scouting for Match #${data["match"]} on the ${if(data["is_red_alliance"].asBoolean) "Blue" else "Red"} alliance")
+                                    }) {
+                                        Text(gson.toJson(data))
+                                    }
                                 }
                             }
                         } else {
