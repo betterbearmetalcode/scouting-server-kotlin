@@ -49,13 +49,14 @@ fun DataCollectionScreen(navController: NavHostController) {
                     Text(text = "Start Server")
                 }
                 Button(onClick = {
-                    server?.stop()
-                    serverStarted = false
-                    serverRunningText = "Server Disabled"
-                    serverRunningTextStyle = textStyleRed
+                    scope.launch {
+                        server?.stop()
+                        serverStarted = false
+                        serverRunningText = "Server Disabled"
+                        serverRunningTextStyle = textStyleRed
+                    }
                 }) {
                     Text(text = "Stop Server")
-
                 }
                 Text(
                     text = serverRunningText,
