@@ -6,11 +6,11 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.google.gson.Gson
 import org.bson.Document
 import org.dhatim.fastexcel.Color
 import org.dhatim.fastexcel.Workbook
@@ -196,8 +196,16 @@ fun DatabaseManagementScreen(navController: NavController) {
             Button(onClick = { navController.navigateUp() }) {
                 Text("Back")
             }
-            Button(onClick = { navController.navigate(ScoringScreen)}) {
+            Button(onClick = { navController.navigate(ScoringScreen) }) {
                 Text("Advanced Mode")
+            }
+            Button(onClick = {
+                val file = openFileDialog(ComposeWindow(), "Choose a File", listOf(".xlsx"), false)
+                if (!file.isEmpty()) {
+                    importSpreadsheet(file.first(), eventCode.value)
+                }
+            }) {
+                Text("Import Excel File")
             }
         }
     }
