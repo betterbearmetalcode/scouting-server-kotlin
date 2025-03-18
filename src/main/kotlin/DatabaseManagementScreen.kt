@@ -259,7 +259,7 @@ fun formatKey(key: String): String {
 
 fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
     val file = File("output-${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}.xlsx")
-    val workbook = Workbook(FileOutputStream(file), "Scouting Data", "1.0")
+    val workbook = Workbook(FileOutputStream(file), "Scouting Data", null)
 
     val worksheet = workbook.newWorksheet("Data")
 
