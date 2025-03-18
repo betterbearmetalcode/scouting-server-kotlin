@@ -321,6 +321,30 @@ fun ScoringScreen(navController: NavController) {
     }
 }
 
+// From https://www.reddit.com/r/Kotlin/comments/n16u8z/desktop_compose_file_picker/?rdt=55691
+fun openFileDialog(
+    window: ComposeWindow,
+    title: String,
+    allowedExtensions: List<String>,
+    allowMultiSelection: Boolean = true
+): Set<File> {
+    return FileDialog(window, title, FileDialog.LOAD).apply {
+        isMultipleMode = allowMultiSelection
+
+        // windows
+        file = allowedExtensions.joinToString(";") { "*$it" } // e.g. '*.jpg'
+
+        // linux
+        setFilenameFilter { _, name ->
+            allowedExtensions.any {
+                name.endsWith(it)
+            }
+        }
+
+        isVisible = true
+    }.files.toSet()
+}
+
 fun calculateList(weights: Map<String, Double>, sdScores: Map<String, HashMap<Int, Double>>): Map<Int, Double> {
     val normalizedWeights = normalizeWeights(weights)
 
