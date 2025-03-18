@@ -22,6 +22,7 @@ dependencies {
     implementation("com.github.betterbearmetalcode:koala:c654872")
     implementation("ch.qos.logback:logback-classic:1.5.15")
     implementation("org.dhatim:fastexcel:0.18.4")
+    implementation("org.dhatim:fastexcel-reader:0.18.4")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("org.mongodb:mongodb-driver-sync:5.2.1")
 }
