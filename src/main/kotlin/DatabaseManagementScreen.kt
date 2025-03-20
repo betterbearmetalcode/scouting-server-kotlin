@@ -11,6 +11,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.google.gson.Gson
 import org.bson.Document
 import org.dhatim.fastexcel.Color
 import org.dhatim.fastexcel.Workbook
@@ -117,6 +118,42 @@ fun DatabaseManagementScreen(navController: NavController) {
                 }
             }) {
                 Text("Update stop and endgame with TBA")
+            }
+            Button(
+                onClick = {
+                    // Retrieve all match documents for the event.
+                    val allMatches = manager.getDataFromEvent(DatabaseType.MATCH, eventCode.value)
+                    // Group documents by team.
+                    val groupedByTeam = allMatches.groupBy { it["team"] as String }
+                    // Collection to hold documents that are not duplicates.
+                    val filteredCollection = mutableListOf<Map<String, Any>>()
+
+                    groupedByTeam.forEach { (_, docs) ->
+                        // Sort each group based on the match number (converted to Int).
+                        val sortedDocs = docs.sortedBy { (it["match"] as String).toInt() }
+                        var lastKeptMatchNumber: Int? = null
+                        // Iterate through the sorted documents.
+                        for (doc in sortedDocs) {
+                            val currentMatchNumber = (doc["match"] as String).toInt()
+                            if (lastKeptMatchNumber == null || currentMatchNumber - lastKeptMatchNumber != 1) {
+                                filteredCollection.add(doc)
+                                lastKeptMatchNumber = currentMatchNumber
+                            }
+                        }
+                    }
+                    val timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                    // Use Gson to convert documents to JSON.
+                    val gson = Gson()
+                    // Output file in NDJSON format.
+                    val outputFile = File("output-${timestamp}-filtered.ndjson")
+                    outputFile.printWriter().use { writer ->
+                        filteredCollection.forEach { doc ->
+                            writer.println(gson.toJson(doc))
+                        }
+                    }
+                }
+            ) {
+                Text("Export Deduplicated Data")
             }
         }
         Row {
@@ -256,11 +293,13 @@ fun generateLocationIndices(key: String, value: Any, prefix: String, hash: HashM
 }
 
 fun formatKey(key: String): String {
-    var temp = key.replace("_", " ")
+    val temp = key.replace("_", " ")
     val words = temp.split(" ")
     val finalVal = StringBuilder()
     for (word in words) {
-        finalVal.append(word[0].uppercaseChar() + word.drop(1) + " ")
+        if (word.isNotEmpty()) {
+            finalVal.append(word[0].uppercaseChar()).append(word.drop(1)).append(" ")
+        }
     }
     return finalVal.toString()
 }
@@ -366,6 +405,39 @@ enum class ScoreErrorLevel(val color: String) {
     override fun toString(): String {
         return this.color
     }
+}
+
+fun genCSVFile(values: List<String>, fileName: String) {
+    val file = File("$fileName.csv")
+    file.printWriter().use { writer ->
+        values.forEach { value ->
+            writer.println(value)
+        }
+    }
+}
+fun genCSVFile(values: HashMap<String, Double>, fileName: String) {
+    val file = File("$fileName.csv")
+    file.printWriter().use { writer ->
+        values.forEach { (key, value) ->
+            writer.println("$key,$value")
+        }
+    }
+}
+
+fun readCSV(csv: String): List<String> {
+    return csv.split(",")
+}
+
+fun readCSV(csv: String, hashMap: Boolean): HashMap<String, Double> {
+    val hash = HashMap<String, Double>()
+    val lines = csv.split("\n")
+    lines.forEach {
+        val line = it.split(",")
+        if (line.size == 2) {
+            hash[line[0]] = line[1].toDouble()
+        }
+    }
+    return hash
 }
 
 enum class ReefLevel(val tbaKey: String, val key: String) {
