@@ -17,6 +17,7 @@ fun train(weights: Map<String, Double>, ideal: List<Int>, finalVals: Map<String,
 
     var bestWeights = weights
     repeat(generations) { generation ->
+        println("Starting generation #$generation")
         val weightsThisGen = ArrayList<Map<String, Double>>()
 
         repeat(numConcurrent) {
@@ -37,6 +38,9 @@ fun train(weights: Map<String, Double>, ideal: List<Int>, finalVals: Map<String,
                 bestWeights = it.second
             }
         }
+
+        println("Best Fitness this generation - $bestFitness")
+        println("------------------------")
     }
 
     bestWeights
