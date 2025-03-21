@@ -14,6 +14,7 @@ fun mutate(weights: MutableMap<String, Double>, chance: Double = 0.1, strength: 
 
 fun train(weights: Map<String, Double>, ideal: List<Int>, finalVals: Map<String, HashMap<Int, Double>>, numConcurrent: Int, generations: Int) = runBlocking<Map<String, Double>> {
     var bestFitness = fitness(genList(weights, finalVals), ideal)
+
     var bestWeights = weights
     repeat(generations) { generation ->
         val weightsThisGen = ArrayList<Map<String, Double>>()

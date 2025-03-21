@@ -22,6 +22,7 @@ import java.io.File
 import java.util.*
 import kotlin.collections.Map.Entry
 import kotlin.math.round
+import kotlin.random.Random
 
 @Composable
 fun ScoringScreen(navController: NavController) {
@@ -153,7 +154,7 @@ fun ScoringScreen(navController: NavController) {
 
                 finalMap.forEach { (key, value) ->
                     finalMap[key] = sdScorer(value)
-                    listOfWeights.putIfAbsent(key, mutableDoubleStateOf(1.0))
+                    listOfWeights.putIfAbsent(key, mutableDoubleStateOf(Random.nextDouble(-1.0, 1.0)))
                 }
                 debug = true
             }) {
