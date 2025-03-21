@@ -222,7 +222,16 @@ fun ScoringScreen(navController: NavController) {
                             val lines = reader.readLines()
                             val targetPicklist = lines.map { it.toInt() }
 
-                            // Implement Actual Training
+                            val unmutableList = HashMap<String, Double>()
+
+                            listOfWeights.forEach {
+                                unmutableList[it.key] = it.value.value
+                            }
+
+                            val output = train(unmutableList, targetPicklist, finalMap, 100, 10)
+                            output.forEach {
+                                listOfWeights[it.key] = mutableDoubleStateOf(it.value)
+                            }
                         }
                     }) {
                     Text("Start Training")
@@ -294,7 +303,7 @@ fun ScoringScreen(navController: NavController) {
                     }
                 }
             }
-            if (tabIndex == 1) {
+            else if (tabIndex == 1) {
                 LazyColumn {
                     val sortedMap = ArrayList<Entry<Int, Double>>()
 
@@ -311,7 +320,7 @@ fun ScoringScreen(navController: NavController) {
                     }
                 }
             }
-            if (tabIndex == 2) {
+            else if (tabIndex == 2) {
                 Row(modifier = Modifier.align(Alignment.CenterHorizontally)) {
                     Text("Use Weights")
                     Switch(showWeightedMatrix, onCheckedChange = { showWeightedMatrix = !showWeightedMatrix })
