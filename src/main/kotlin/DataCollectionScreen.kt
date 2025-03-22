@@ -1,3 +1,4 @@
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,14 +16,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
-import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import composables.Accordian
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.bson.json.JsonObject
 import org.tahomarobotics.scouting.Server
 import java.net.InetAddress
 
@@ -99,7 +98,7 @@ fun DataCollectionScreen(navController: NavHostController) {
                                 }
                                 "strat" -> {
                                     Accordian(labelContents = {
-                                        Text("Strategy Scouting for Match #${data["match"]} on the ${if(data["is_red_alliance"].asBoolean) "Blue" else "Red"} alliance")
+                                        Text("Strategy Scouting for Match #${data["match"]} on the ${if(data["is_red_alliance"].asBoolean) "Red" else "Blue"} alliance")
                                     }) {
                                         Text(gson.toJson(data))
                                     }
