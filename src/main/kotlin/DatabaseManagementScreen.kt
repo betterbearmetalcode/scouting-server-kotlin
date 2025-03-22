@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.google.gson.Gson
+import org.apache.commons.lang3.StringUtils
 import org.bson.Document
 import org.dhatim.fastexcel.Color
 import org.dhatim.fastexcel.Workbook
@@ -305,18 +306,29 @@ fun formatKey(key: String): String {
 }
 
 fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
-    val file = File("output-${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}.xlsx")
+    val matches = manager.getDataFromEvent(scoutingType, eventKey)
+    
+    var highestMatchNum = 0
+    var lowestMatchNum = 9999
+    
+    matches.forEach {
+        val matchNum = parseInt(it["match"] as String)
+        if (highestMatchNum < matchNum)
+            highestMatchNum = matchNum
+        if (lowestMatchNum > matchNum)
+            lowestMatchNum = matchNum
+    }
+    
+    val file = File("${StringUtils.capitalize(scoutingType.collectionName)} export from $eventKey - Matches $lowestMatchNum-$highestMatchNum.xlsx")
     val workbook = Workbook(FileOutputStream(file), "Scouting Data", null)
 
     val worksheet = workbook.newWorksheet("Data")
-
-    val matches = manager.getDataFromEvent(scoutingType, eventKey)
-
+    
     worksheet.value(0, 0, "Match #")
 
     var i = 1
     val keyLocationsHash = HashMap<String, Int>()
-    val tempMatch = matches[0].toList()
+val tempMatch = matches.firstOrNull()?.toList() ?: emptyList()
     val sortedKeys = tempMatch.sortedBy {
         if (it.first == "team") 0
         else if (it.first == "robotStartPosition") 1
@@ -361,8 +373,21 @@ fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
     workbook.close()
 }
 
-fun genExcelFile(stratData: Map<String, Map<Int, Double>>) {
-    val file = File("output-${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}.xlsx")
+fun genExcelFile(eventKey: String, stratData: Map<String, Map<Int, Double>>) {
+    
+    var highestMatchNum = 0
+    var lowestMatchNum = 9999
+    
+    stratData.forEach { (key, value) ->
+        value.forEach { (matchNum, _) ->
+            if (highestMatchNum < matchNum)
+                highestMatchNum = matchNum
+            if (lowestMatchNum > matchNum)
+                lowestMatchNum = matchNum
+        }
+    }
+    
+    val file = File("Compiled Strategy Export from $eventKey - Matches $lowestMatchNum-$highestMatchNum.xlsx")
     val workbook = Workbook(FileOutputStream(file), "Scouting Data", "1.0")
 
     val worksheet = workbook.newWorksheet("Data")

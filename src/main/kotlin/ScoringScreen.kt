@@ -167,7 +167,7 @@ fun ScoringScreen(navController: NavController) {
 
         if (debug) {
             Row(modifier = Modifier.fillMaxWidth()) {
-                Button(onClick = { genExcelFile(finalMap) }) {
+                Button(onClick = { genExcelFile(eventCode.value, finalMap) }) {
                     Text("Export compiled strat data")
                 }
                 Button(
