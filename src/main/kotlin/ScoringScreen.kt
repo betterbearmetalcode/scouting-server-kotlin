@@ -14,6 +14,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.bson.Document
 import org.tahomarobotics.scouting.DatabaseType
 import org.tahomarobotics.scouting.TBAInterface
@@ -26,6 +29,7 @@ import kotlin.random.Random
 
 @Composable
 fun ScoringScreen(navController: NavController) {
+    val scope = CoroutineScope(Dispatchers.Default)
     var showEmptyEventError by remember { mutableStateOf(false) }
     var invalidEventError by remember { mutableStateOf(false) }
     val finalMap: HashMap<String, HashMap<Int, Double>> = remember { HashMap() }
@@ -229,9 +233,11 @@ fun ScoringScreen(navController: NavController) {
                                 unmutableList[it.key] = it.value.value
                             }
 
-                            val output = train(unmutableList, targetPicklist, finalMap, 100, 10)
-                            output.forEach {
-                                listOfWeights[it.key] = mutableDoubleStateOf(it.value)
+                            scope.launch {
+                                val output = train(unmutableList, targetPicklist, finalMap, 1000, 1000)
+                                output.forEach {
+                                    listOfWeights[it.key] = mutableDoubleStateOf(it.value)
+                                }
                             }
                         }
                     }) {
