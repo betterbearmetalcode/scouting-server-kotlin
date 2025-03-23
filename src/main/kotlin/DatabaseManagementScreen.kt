@@ -14,7 +14,6 @@ import androidx.navigation.NavController
 import com.google.gson.Gson
 import org.apache.commons.lang3.StringUtils
 import org.bson.Document
-import org.dhatim.fastexcel.Color
 import org.dhatim.fastexcel.Workbook
 import org.dhatim.fastexcel.Worksheet
 import org.tahomarobotics.scouting.DatabaseType
@@ -321,7 +320,7 @@ fun formatKey(key: String): String {
 
 fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
     val matches = manager.getDataFromEvent(scoutingType, eventKey)
-    
+
     var highestMatchNum = 0
     var lowestMatchNum = 9999
 
@@ -428,7 +427,11 @@ fun genExcelFile(eventKey: String, stratData: Map<String, Map<Int, Double>>) {
     var highestMatchNum = 0
     var lowestMatchNum = 9999
 
-    val file = File("Compiled Strategy Export from $eventKey - ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM-dd HH:mm:ss"))}.xlsx")
+    val file = File(
+        "Compiled Strategy Export from $eventKey - ${
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM-dd HH:mm:ss"))
+        }.xlsx"
+    )
     val workbook = Workbook(FileOutputStream(file), "Scouting Data", "1.0")
 
     val worksheet = workbook.newWorksheet("Data")
@@ -463,10 +466,11 @@ fun genExcelFile(eventKey: String, stratData: Map<String, Map<Int, Double>>) {
 }
 
 enum class ScoreErrorLevel(val color: String) {
-    GREEN(Color.GREEN),
-    YELLOW(Color.YELLOW),
-    RED(Color.RED),
-    ERROR(Color.GRAY5);
+    GREEN("00FF00"),
+    YELLOW("FFFF00"),
+    ORANGE("FF9900"),
+    RED("FF0000"),
+    ERROR("B7B7B7");
 
     override fun toString(): String {
         return this.color
@@ -514,16 +518,19 @@ enum class ReefLevel(val tbaKey: String, val key: String) {
     TROUGH("trough", "reef_level1")
 }
 
-fun checkScore(sampleScore: Int, realScore: Int, yellowPoint: Int, redPoint: Int): ScoreErrorLevel {
-    if (realScore == -1)
-        return ScoreErrorLevel.ERROR
+fun checkScore(sampleScore: Int, realScore: Int, yellowPoint: Int, orangePoint: Int, redPoint: Int): ScoreErrorLevel {
+    if (realScore == -1) return ScoreErrorLevel.ERROR
+
     val offBy = (realScore - sampleScore).absoluteValue
-    if (offBy >= yellowPoint && offBy < redPoint && yellowPoint > 0) {
-        return ScoreErrorLevel.YELLOW
-    }
+    
     if (offBy >= redPoint) {
         return ScoreErrorLevel.RED
     }
+    
+    if (offBy in orangePoint..<redPoint && orangePoint > 0) return ScoreErrorLevel.ORANGE
+
+    if (offBy in yellowPoint..<orangePoint && yellowPoint > 0) return ScoreErrorLevel.YELLOW
+    
     return ScoreErrorLevel.GREEN
 }
 
@@ -574,10 +581,7 @@ fun calculateScoutedCoralScoreForMatch(
     val matchingMatches = generateMatchingMatches(match, matches, blue)
     var num = 0
     matchingMatches.forEach {
-        ((it[if (auto) "auto" else "tele"] as Document)["coral"] as Document).forEach {
-            if (it.key == level.key)
-                num += it.value as Int
-        }
+        num += ((it[if (auto) "auto" else "tele"] as Document)["coral"] as Document)[level.key] as Int
     }
     return num
 }
@@ -659,7 +663,7 @@ fun handleValueForExcel(
                         val score = calculateScoutedCoralScoreForMatch(matchDocument, allMatches, inAuto, blue, level)
                         val realScore = getActualCoral(level, inAuto, blue, event, match)
                         val color = checkScore(
-                            score, realScore, 1, if (inAuto) {
+                            score, realScore, 1, 2, if (inAuto) {
                                 2
                             } else {
                                 3
@@ -672,7 +676,7 @@ fun handleValueForExcel(
             } else if (key == "algae") {
                 val score = calculateScoutedAlgaeScoreForMatch(matchDocument, allMatches, blue, false)
                 val realScore = getActualAlgae(false, blue, event, match)
-                val color = checkScore(score, realScore, -1, 1)
+                val color = checkScore(score, realScore, -1, 1, 2)
                 value.forEach { (docKey, docValue) ->
                     if (docKey.contains("processed"))
                         worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!)
@@ -681,7 +685,7 @@ fun handleValueForExcel(
             } else if (key == "net") {
                 val score = calculateScoutedAlgaeScoreForMatch(matchDocument, allMatches, blue, true)
                 val realScore = getActualAlgae(true, blue, event, match)
-                val color = checkScore(score, realScore, -1, 1)
+                val color = checkScore(score, realScore, -1, 1, 2)
                 value.forEach { (docKey, docValue) ->
                     if (docKey.contains("scored"))
                         worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!)
@@ -718,7 +722,13 @@ fun getActualCoral(level: ReefLevel, auto: Boolean, blue: Boolean, event: String
         }
     }
 
-    return actualMatch[level.tbaKey] as Int
+    return if (auto) actualMatch[level.tbaKey] as Int
+    else {
+        val autoCoral = getActualCoral(level, true, blue, event, matchNum)
+        if (autoCoral != -1) {
+            actualMatch[level.tbaKey] as Int - autoCoral
+        } else -1
+    }
 }
 
 fun getActualAlgae(net: Boolean, blue: Boolean, event: String, matchNum: Int): Int {
