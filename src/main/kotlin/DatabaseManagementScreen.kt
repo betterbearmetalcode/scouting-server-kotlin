@@ -36,7 +36,7 @@ var eventCode = mutableStateOf("")
 
 @Composable
 fun DatabaseManagementScreen(navController: NavController) {
-   var showError by remember { mutableStateOf(false) }
+    var showError by remember { mutableStateOf(false) }
     var showEmptyEventError by remember { mutableStateOf(false) }
     var invalidEventError by remember { mutableStateOf(false) }
     var matchSelected by remember { mutableStateOf(true) }
@@ -50,7 +50,10 @@ fun DatabaseManagementScreen(navController: NavController) {
                 Text("Event Code:")
                 TextField(value = eventCode.value, onValueChange = { eventCode.value = it })
             }
-            Button(onClick = {navController.navigate(CorrectionScreen)}, modifier = Modifier.align(Alignment.CenterEnd)) {
+            Button(
+                onClick = { navController.navigate(CorrectionScreen) },
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
                 Text("Correct Data")
             }
         }
@@ -90,11 +93,12 @@ fun DatabaseManagementScreen(navController: NavController) {
 
                             when (val startPos = it["robotStartPosition"] as Int) {
                                 0, 1, 2 -> {
-                                    (it["auto"] as Document)["moved"] = convertYesNoToInt(breakdownRed["autoLineRobot${startPos + 1}"] as String)
-                                    
+                                    (it["auto"] as Document)["moved"] =
+                                        convertYesNoToInt(breakdownRed["autoLineRobot${startPos + 1}"] as String)
+
                                     val endPos = breakdownRed["endGameRobot${startPos + 1}"] as String
                                     println("end pos: $endPos")
-                                    
+
                                     it.put("parked", endPos == "Parked")
                                     it.put("shallow", endPos == "ShallowCage")
                                     it.put("deep", endPos == "DeepCage")
@@ -102,7 +106,8 @@ fun DatabaseManagementScreen(navController: NavController) {
                                 }
 
                                 3, 4, 5 -> {
-                                    (it["auto"] as Document)["moved"] = convertYesNoToInt(breakdownBlue["autoLineRobot${startPos - 2}"] as String)
+                                    (it["auto"] as Document)["moved"] =
+                                        convertYesNoToInt(breakdownBlue["autoLineRobot${startPos - 2}"] as String)
 
                                     val endPos = breakdownBlue["endGameRobot${startPos - 2}"] as String
                                     it.put("parked", endPos == "Parked")
@@ -252,35 +257,44 @@ fun DatabaseManagementScreen(navController: NavController) {
     if (showError) {
         AlertDialog(
             onDismissRequest = { showError = false },
-            buttons = {Button(onClick = {showError = false}) {Text("Ok")} },
-            text = {Text("Error when generating data from event code")},
+            buttons = { Button(onClick = { showError = false }) { Text("Ok") } },
+            text = { Text("Error when generating data from event code") },
         )
     }
     if (showEmptyEventError) {
         AlertDialog(
             onDismissRequest = { showEmptyEventError = false },
-            buttons = {Button(onClick = {showEmptyEventError = false}) {Text("Ok")}},
-            text = {Text("Empty Event Code!")},
+            buttons = { Button(onClick = { showEmptyEventError = false }) { Text("Ok") } },
+            text = { Text("Empty Event Code!") },
         )
     }
     if (invalidEventError) {
         AlertDialog(
             onDismissRequest = { invalidEventError = false },
-            buttons = {Button(onClick = {invalidEventError = false}) {Text("Ok")}},
-            text = {Text("Invalid Event Code!")},
+            buttons = { Button(onClick = { invalidEventError = false }) { Text("Ok") } },
+            text = { Text("Invalid Event Code!") },
         )
     }
 }
 
-fun generateLocationIndices(key: String, value: Any, prefix: String, hash: HashMap<String, Int>, column: Int, spreadsheet: Worksheet) : Int {
+fun generateLocationIndices(
+    key: String,
+    value: Any,
+    prefix: String,
+    hash: HashMap<String, Int>,
+    column: Int,
+    spreadsheet: Worksheet
+): Int {
     var currentColumn = column
 
     when (value) {
         is Document -> {
             value.forEach { (newKey, value) ->
-                currentColumn = generateLocationIndices(newKey, value, "$prefix$key: ", hash, currentColumn, spreadsheet)
+                currentColumn =
+                    generateLocationIndices(newKey, value, "$prefix$key: ", hash, currentColumn, spreadsheet)
             }
         }
+
         else -> {
             if (key == "match" || key == "_id")
                 return currentColumn
@@ -310,25 +324,32 @@ fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
     
     var highestMatchNum = 0
     var lowestMatchNum = 9999
-    
+
     matches.forEach {
-        val matchNum = parseInt(it["match"] as String)
+        val matchNum = if (scoutingType == DatabaseType.MATCH) {
+            parseInt(it["match"] as String)
+        } else if (scoutingType == DatabaseType.STRATEGY) {
+            it["match"] as Int
+        } else {
+            0
+        }
         if (highestMatchNum < matchNum)
             highestMatchNum = matchNum
         if (lowestMatchNum > matchNum)
             lowestMatchNum = matchNum
     }
-    
-    val file = File("${StringUtils.capitalize(scoutingType.collectionName)} export from $eventKey - Matches $lowestMatchNum-$highestMatchNum.xlsx")
+
+    val file =
+        File("${StringUtils.capitalize(scoutingType.collectionName)} export from $eventKey - Matches $lowestMatchNum-$highestMatchNum.xlsx")
     val workbook = Workbook(FileOutputStream(file), "Scouting Data", null)
 
     val worksheet = workbook.newWorksheet("Data")
-    
+
     worksheet.value(0, 0, "Match #")
 
     var i = 1
     val keyLocationsHash = HashMap<String, Int>()
-val tempMatch = matches.firstOrNull()?.toList() ?: emptyList()
+    val tempMatch = matches.firstOrNull()?.toList() ?: emptyList()
     val sortedKeys = tempMatch.sortedBy {
         if (it.first == "team") 0
         else if (it.first == "robotStartPosition") 1
@@ -345,7 +366,12 @@ val tempMatch = matches.firstOrNull()?.toList() ?: emptyList()
 
     matches.sortWith(Comparator { hash1: HashMap<String, Any>, hash2: HashMap<String, Any> ->
         when (val matchNum = hash1["match"].toString().toInt() - hash2["match"].toString().toInt()) {
-            0 -> try {hash1["robotStartPosition"].toString().toInt().compareTo(hash2["robotStartPosition"].toString().toInt())} catch(_: NumberFormatException) { 0 }
+            0 -> try {
+                hash1["robotStartPosition"].toString().toInt().compareTo(hash2["robotStartPosition"].toString().toInt())
+            } catch (_: NumberFormatException) {
+                0
+            }
+
             else -> matchNum
         }
     })
@@ -355,17 +381,41 @@ val tempMatch = matches.firstOrNull()?.toList() ?: emptyList()
         i = 1
         it.forEach { (key, value) ->
             if (key == "match") {
-                worksheet.value(index+1, 0, value.toString())
+                worksheet.value(index + 1, 0, value.toString())
                 return@forEach
             }
             if (key == "robotStartPosition") {
-                worksheet.value(index+1, keyLocationsHash[key]!!, startPosToString(value as Int))
+                worksheet.value(index + 1, keyLocationsHash[key]!!, startPosToString(value as Int))
                 return@forEach
             }
             if (scoutingType == DatabaseType.MATCH)
-                handleValueForExcel(worksheet, it, matches, value, key, index + 1, keyLocationsHash, "", (it["robotStartPosition"] as Int >= 3), parseInt(it["match"] as String), eventKey)
+                handleValueForExcel(
+                    worksheet,
+                    it,
+                    matches,
+                    value,
+                    key,
+                    index + 1,
+                    keyLocationsHash,
+                    "",
+                    (it["robotStartPosition"] as Int >= 3),
+                    parseInt(it["match"] as String),
+                    eventKey
+                )
             else if (scoutingType == DatabaseType.STRATEGY)
-                handleValueForExcel(worksheet, it, matches, value, key, index + 1, keyLocationsHash, "", (it["is_red_alliance"] as Boolean), it["match"] as Int, eventKey)
+                handleValueForExcel(
+                    worksheet,
+                    it,
+                    matches,
+                    value,
+                    key,
+                    index + 1,
+                    keyLocationsHash,
+                    "",
+                    (it["is_red_alliance"] as Boolean),
+                    it["match"] as Int,
+                    eventKey
+                )
         }
     }
 
@@ -374,20 +424,11 @@ val tempMatch = matches.firstOrNull()?.toList() ?: emptyList()
 }
 
 fun genExcelFile(eventKey: String, stratData: Map<String, Map<Int, Double>>) {
-    
+
     var highestMatchNum = 0
     var lowestMatchNum = 9999
-    
-    stratData.forEach { (key, value) ->
-        value.forEach { (matchNum, _) ->
-            if (highestMatchNum < matchNum)
-                highestMatchNum = matchNum
-            if (lowestMatchNum > matchNum)
-                lowestMatchNum = matchNum
-        }
-    }
-    
-    val file = File("Compiled Strategy Export from $eventKey - Matches $lowestMatchNum-$highestMatchNum.xlsx")
+
+    val file = File("Compiled Strategy Export from $eventKey - ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM-dd HH:mm:ss"))}.xlsx")
     val workbook = Workbook(FileOutputStream(file), "Scouting Data", "1.0")
 
     val worksheet = workbook.newWorksheet("Data")
@@ -440,6 +481,7 @@ fun genCSVFile(values: List<String>, fileName: String) {
         }
     }
 }
+
 fun genCSVFile(values: HashMap<String, Double>, fileName: String) {
     val file = File("$fileName.csv")
     file.printWriter().use { writer ->
@@ -472,10 +514,10 @@ enum class ReefLevel(val tbaKey: String, val key: String) {
     TROUGH("trough", "reef_level1")
 }
 
-fun checkScore(sampleScore : Int, realScore: Int, yellowPoint: Int, redPoint: Int) : ScoreErrorLevel {
+fun checkScore(sampleScore: Int, realScore: Int, yellowPoint: Int, redPoint: Int): ScoreErrorLevel {
     if (realScore == -1)
         return ScoreErrorLevel.ERROR
-    val offBy = (realScore-sampleScore).absoluteValue
+    val offBy = (realScore - sampleScore).absoluteValue
     if (offBy >= yellowPoint && offBy < redPoint && yellowPoint > 0) {
         return ScoreErrorLevel.YELLOW
     }
@@ -485,7 +527,7 @@ fun checkScore(sampleScore : Int, realScore: Int, yellowPoint: Int, redPoint: In
     return ScoreErrorLevel.GREEN
 }
 
-fun handleValueForJSON(value: Any, key : String, json: StringBuilder) {
+fun handleValueForJSON(value: Any, key: String, json: StringBuilder) {
     when (value) {
         is Document -> {
             json.append("\"$key\":{")
@@ -495,9 +537,11 @@ fun handleValueForJSON(value: Any, key : String, json: StringBuilder) {
             json.deleteCharAt(json.lastIndex)
             json.append("},")
         }
+
         is String -> {
             json.append("\"$key\":\"${value.replace("\"", "\\\"")}\",")
         }
+
         else -> {
             if (key != "_id")
                 json.append("\"$key\":$value,")
@@ -505,7 +549,11 @@ fun handleValueForJSON(value: Any, key : String, json: StringBuilder) {
     }
 }
 
-fun generateMatchingMatches(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, blue: Boolean) : ArrayList<HashMap<String, Any>> {
+fun generateMatchingMatches(
+    match: HashMap<String, Any>,
+    matches: List<HashMap<String, Any>>,
+    blue: Boolean
+): ArrayList<HashMap<String, Any>> {
     val matchNum = match["match"].toString()
     val matchingMatches = ArrayList<HashMap<String, Any>>()
     matches.forEach {
@@ -516,7 +564,13 @@ fun generateMatchingMatches(match: HashMap<String, Any>, matches: List<HashMap<S
     return matchingMatches
 }
 
-fun calculateScoutedCoralScoreForMatch(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, auto: Boolean, blue: Boolean, level: ReefLevel) : Int {
+fun calculateScoutedCoralScoreForMatch(
+    match: HashMap<String, Any>,
+    matches: List<HashMap<String, Any>>,
+    auto: Boolean,
+    blue: Boolean,
+    level: ReefLevel
+): Int {
     val matchingMatches = generateMatchingMatches(match, matches, blue)
     var num = 0
     matchingMatches.forEach {
@@ -528,7 +582,12 @@ fun calculateScoutedCoralScoreForMatch(match: HashMap<String, Any>, matches: Lis
     return num
 }
 
-fun calculateScoutedAlgaeScoreForMatch(match: HashMap<String, Any>, matches: List<HashMap<String, Any>>, blue: Boolean, net: Boolean) : Int {
+fun calculateScoutedAlgaeScoreForMatch(
+    match: HashMap<String, Any>,
+    matches: List<HashMap<String, Any>>,
+    blue: Boolean,
+    net: Boolean
+): Int {
     val matchingMatches = generateMatchingMatches(match, matches, blue)
     var num = 0
     matchingMatches.forEach {
@@ -543,7 +602,7 @@ fun calculateScoutedAlgaeScoreForMatch(match: HashMap<String, Any>, matches: Lis
     return num
 }
 
-fun hashToJSONString(hash : HashMap<String, Any>) : String {
+fun hashToJSONString(hash: HashMap<String, Any>): String {
     val json = StringBuilder()
     json.append("{")
     hash.forEach { (key, value) ->
@@ -554,17 +613,41 @@ fun hashToJSONString(hash : HashMap<String, Any>) : String {
     return json.toString()
 }
 
-fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any>, allMatches: List<HashMap<String, Any>>, value: Any, key: String, currentColumn: Int, locationsHash: HashMap<String, Int>, prefix: String, blue: Boolean, match: Int, event: String) {
+fun handleValueForExcel(
+    worksheet: Worksheet,
+    matchDocument: HashMap<String, Any>,
+    allMatches: List<HashMap<String, Any>>,
+    value: Any,
+    key: String,
+    currentColumn: Int,
+    locationsHash: HashMap<String, Int>,
+    prefix: String,
+    blue: Boolean,
+    match: Int,
+    event: String
+) {
     when (value) {
         is Document -> {
             value.forEach { (docKey, docValue) ->
-                handleValueForExcel(worksheet, matchDocument, allMatches, docValue, docKey, currentColumn, locationsHash, "$prefix$key: ", blue, match, event)
+                handleValueForExcel(
+                    worksheet,
+                    matchDocument,
+                    allMatches,
+                    docValue,
+                    docKey,
+                    currentColumn,
+                    locationsHash,
+                    "$prefix$key: ",
+                    blue,
+                    match,
+                    event
+                )
             }
             if (key == "coral") {
                 val inAuto = prefix.contains("auto")
 
                 value.forEach { (docKey, docValue) ->
-                    var level : ReefLevel? = null
+                    var level: ReefLevel? = null
                     when (docKey) {
                         "reef_level1" -> level = ReefLevel.TROUGH
                         "reef_level2" -> level = ReefLevel.LOW
@@ -575,7 +658,13 @@ fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any
                     if (level != null) {
                         val score = calculateScoutedCoralScoreForMatch(matchDocument, allMatches, inAuto, blue, level)
                         val realScore = getActualCoral(level, inAuto, blue, event, match)
-                        val color = checkScore(score, realScore, 1, if (inAuto) {2} else {3})
+                        val color = checkScore(
+                            score, realScore, 1, if (inAuto) {
+                                2
+                            } else {
+                                3
+                            }
+                        )
                         worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!)
                             .fillColor(color.toString()).set()
                     }
@@ -586,7 +675,8 @@ fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any
                 val color = checkScore(score, realScore, -1, 1)
                 value.forEach { (docKey, docValue) ->
                     if (docKey.contains("processed"))
-                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color.toString()).set()
+                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!)
+                            .fillColor(color.toString()).set()
                 }
             } else if (key == "net") {
                 val score = calculateScoutedAlgaeScoreForMatch(matchDocument, allMatches, blue, true)
@@ -594,13 +684,16 @@ fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any
                 val color = checkScore(score, realScore, -1, 1)
                 value.forEach { (docKey, docValue) ->
                     if (docKey.contains("scored"))
-                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!).fillColor(color.toString()).set()
+                        worksheet.style(currentColumn, locationsHash["$prefix$key: $docKey"]!!)
+                            .fillColor(color.toString()).set()
                 }
             }
         }
+
         is Boolean -> {
             worksheet.value(currentColumn, locationsHash["$prefix$key"]!!, if (value) 1 else 0)
         }
+
         else -> {
             if (key != "_id") {
                 worksheet.value(currentColumn, locationsHash["$prefix$key"]!!, value.toString())
@@ -609,7 +702,7 @@ fun handleValueForExcel(worksheet: Worksheet, matchDocument: HashMap<String, Any
     }
 }
 
-fun getActualCoral(level: ReefLevel, auto: Boolean, blue: Boolean, event: String, matchNum: Int) : Int {
+fun getActualCoral(level: ReefLevel, auto: Boolean, blue: Boolean, event: String, matchNum: Int): Int {
     val matches = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, event)
 
     var actualMatch = Document()
@@ -617,7 +710,8 @@ fun getActualCoral(level: ReefLevel, auto: Boolean, blue: Boolean, event: String
     matches.forEach {
         if (it["match_number"] as Int == matchNum) {
             try {
-                actualMatch = ((it["score_breakdown"] as Document)[if (blue) "blue" else "red"] as Document)[if (auto) "autoReef" else "teleopReef"] as Document
+                actualMatch =
+                    ((it["score_breakdown"] as Document)[if (blue) "blue" else "red"] as Document)[if (auto) "autoReef" else "teleopReef"] as Document
             } catch (_: NullPointerException) {
                 return -1
             }
@@ -627,7 +721,7 @@ fun getActualCoral(level: ReefLevel, auto: Boolean, blue: Boolean, event: String
     return actualMatch[level.tbaKey] as Int
 }
 
-fun getActualAlgae(net: Boolean, blue: Boolean, event: String, matchNum: Int) : Int {
+fun getActualAlgae(net: Boolean, blue: Boolean, event: String, matchNum: Int): Int {
     val matches = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, event)
 
     var actualMatch = Document()
@@ -645,7 +739,7 @@ fun getActualAlgae(net: Boolean, blue: Boolean, event: String, matchNum: Int) : 
     return actualMatch[if (net) "netAlgaeCount" else "wallAlgaeCount"] as Int
 }
 
-fun startPosToString(pos: Int) : String {
+fun startPosToString(pos: Int): String {
     return when (pos) {
         0 -> "Red 1"
         1 -> "Red 2"
