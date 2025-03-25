@@ -2,6 +2,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.lang.Math.pow
+import kotlin.math.absoluteValue
+import kotlin.math.pow
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 fun mutate(weights: MutableMap<String, Double>, chance: Double = 0.1, strength: Double = 0.1) {
@@ -29,7 +32,7 @@ fun train(
 
         repeat(numConcurrent) {
             val weight = bestWeights.toMutableMap()
-            mutate(weight, 1-bestFitness, 1-bestFitness)
+            mutate(weight, 1.0, 1-bestFitness)
             weightsThisGen.add(weight)
         }
         val fitnesses = ArrayList<Pair<Double, Map<String, Double>>>()
@@ -42,6 +45,8 @@ fun train(
             )
         }
 
+        jobs.forEach { it.join() }
+
         fitnesses.forEach {
             if (it.first > bestFitness) {
                 bestFitness = it.first
@@ -49,10 +54,11 @@ fun train(
             }
         }
 
-        jobs.forEach { it.join() }
         println("Best Fitness this generation - $bestFitness")
         println("------------------------")
     }
+
+    println(averageDistance(genList(bestWeights, finalVals), ideal))
 
     bestWeights
 }
@@ -67,26 +73,49 @@ fun genList(weights: Map<String, Double>, finalMap: Map<String, HashMap<Int, Dou
         weightsAsDouble[key] = value
     }
     val teams = calculateList(weightsAsDouble, weightedMap) as java.util.HashMap<Int, Double>
-    val sortedMap = ArrayList<Int>()
+    val sortedMap = ArrayList<Pair<Int, Double>>()
 
     teams.forEach {
-        sortedMap.add(it.key)
+        sortedMap.add(it.toPair())
     }
 
-    sortedMap.sortByDescending { it }
+    sortedMap.sortByDescending { it.second }
 
-    return sortedMap
+    val fin = ArrayList<Int>()
+    sortedMap.forEach { fin.add(it.first) }
+
+    return fin
 }
 
 fun fitness(exampleOutput: List<Int>, ideal: List<Int>) : Double {
     var fit = 0.0
 
-    fun formula(input: Int) = pow(Math.E, pow(0.1 * input, 4.0))
+    fun formula(input: Double) = Math.E.pow(-input)
 
     repeat(exampleOutput.size) {
-        if (exampleOutput[it] == ideal[it])
-            fit += formula(it)
+        val targetTeam = exampleOutput[it]
+        var dist = it - ideal.indexOf(targetTeam)
+        dist = dist.absoluteValue + 1
+
+        val sqrtDist = sqrt(dist.toDouble())
+        val formIn = ((it + 1) * sqrtDist) - 1
+
+        val formVal = formula(formIn)
+
+
+        fit += formVal
     }
 
-    return fit / 9.56402477056 // Magic number go brrrrrrrrrrrr (limit of the summation)
+    return fit / 1.58197670687 // Magic number go brrrrrrrrrrrr (integral of the formula from 0 to infinity)
+}
+
+fun averageDistance(exampleOutput: List<Int>, ideal: List<Int>) : Double {
+    var total = 0.0
+    repeat(exampleOutput.size) {
+        val team = exampleOutput[it]
+
+        total += (it - ideal.indexOf(team)).absoluteValue
+    }
+
+    return total / exampleOutput.size
 }

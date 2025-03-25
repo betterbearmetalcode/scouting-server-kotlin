@@ -234,7 +234,7 @@ fun ScoringScreen(navController: NavController) {
                             }
 
                             scope.launch {
-                                val output = train(unmutableList, targetPicklist, finalMap, 1000, 1000)
+                                val output = train(unmutableList, targetPicklist, finalMap, 1000, 50)
                                 output.forEach {
                                     listOfWeights[it.key] = mutableDoubleStateOf(it.value)
                                 }
