@@ -5,6 +5,7 @@ build/
 !**/src/test/**/build/
 *.xlsx
 *.csv
+server_address
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
