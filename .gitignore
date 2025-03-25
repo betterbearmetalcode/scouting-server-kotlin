@@ -5,6 +5,7 @@ build/
 !**/src/test/**/build/
 *.xlsx
 *.csv
+server_address
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
@@ -42,3 +43,4 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+/server_address

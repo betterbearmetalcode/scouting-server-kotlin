@@ -1,3 +1,5 @@
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.lang.StrictMath.pow
@@ -26,10 +28,11 @@ fun train(weights: Map<String, Double>, ideal: List<Int>, finalVals: Map<String,
             weightsThisGen.add(weight)
         }
         val fitnesses = ArrayList<Pair<Double, Map<String, Double>>>()
+        val jobs = ArrayList<Job>()
         weightsThisGen.forEach {
-            launch {
+            jobs.add(launch {
                 fitnesses.add(Pair(fitness(genList(it, finalVals), ideal), it))
-            }
+            })
         }
 
         fitnesses.forEach {
@@ -39,6 +42,9 @@ fun train(weights: Map<String, Double>, ideal: List<Int>, finalVals: Map<String,
             }
         }
 
+        jobs.forEach {
+            it.join()
+        }
         println("Best Fitness this generation - $bestFitness")
         println("------------------------")
     }
