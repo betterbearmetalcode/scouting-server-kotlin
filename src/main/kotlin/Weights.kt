@@ -1,8 +1,7 @@
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.lang.StrictMath.pow
+import java.lang.Math.pow
 import kotlin.random.Random
 
 fun mutate(weights: MutableMap<String, Double>, chance: Double = 0.1, strength: Double = 0.1) {
@@ -14,7 +13,13 @@ fun mutate(weights: MutableMap<String, Double>, chance: Double = 0.1, strength: 
     }
 }
 
-fun train(weights: Map<String, Double>, ideal: List<Int>, finalVals: Map<String, HashMap<Int, Double>>, numConcurrent: Int, generations: Int) = runBlocking<Map<String, Double>> {
+fun train(
+    weights: Map<String, Double>,
+    ideal: List<Int>,
+    finalVals: Map<String, HashMap<Int, Double>>,
+    numConcurrent: Int,
+    generations: Int
+) = runBlocking<Map<String, Double>> {
     var bestFitness = fitness(genList(weights, finalVals), ideal)
 
     var bestWeights = weights
@@ -30,9 +35,11 @@ fun train(weights: Map<String, Double>, ideal: List<Int>, finalVals: Map<String,
         val fitnesses = ArrayList<Pair<Double, Map<String, Double>>>()
         val jobs = ArrayList<Job>()
         weightsThisGen.forEach {
-            jobs.add(launch {
-                fitnesses.add(Pair(fitness(genList(it, finalVals), ideal), it))
-            })
+            jobs.add(
+                launch {
+                    fitnesses.add(Pair(fitness(genList(it, finalVals), ideal), it))
+                }
+            )
         }
 
         fitnesses.forEach {
@@ -42,9 +49,7 @@ fun train(weights: Map<String, Double>, ideal: List<Int>, finalVals: Map<String,
             }
         }
 
-        jobs.forEach {
-            it.join()
-        }
+        jobs.forEach { it.join() }
         println("Best Fitness this generation - $bestFitness")
         println("------------------------")
     }
@@ -52,7 +57,7 @@ fun train(weights: Map<String, Double>, ideal: List<Int>, finalVals: Map<String,
     bestWeights
 }
 
-fun genList(weights: Map<String, Double>, finalMap: Map<String, HashMap<Int, Double>>) : List<Int> {
+fun genList(weights: Map<String, Double>, finalMap: Map<String, HashMap<Int, Double>>): List<Int> {
     val weightedMap = HashMap<String, HashMap<Int, Double>>()
     for (entry in finalMap) {
         weightedMap[entry.key] = entry.value.clone() as java.util.HashMap<Int, Double>
