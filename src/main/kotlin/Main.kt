@@ -46,7 +46,7 @@ fun App() {
     }
 }
 
-val manager = DatabaseManager(2025)
+val manager = DatabaseManager(2025, true)
 var server: Server? = null
 val chartValues = arrayOf(3,5,2,6,3,75)
 val chartColors = arrayOf(Color.Red, Color.Green, Color.Blue, Color.White)
