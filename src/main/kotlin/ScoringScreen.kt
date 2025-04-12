@@ -74,9 +74,9 @@ fun ScoringScreen(navController: NavController) {
                 play.putIfAbsent(RankType.STRATEGY, HashMap())
                 play.putIfAbsent(RankType.DRIVING_SKILL, HashMap())
                 play.putIfAbsent(RankType.MECHANICAL_SOUNDNESS, HashMap())
-                val stratInfo = manager.getDataFromEvent(DatabaseType.STRATEGY, eventKey)
+                val stratInfo = manager[databaseIndex.value]?.getDataFromEvent(DatabaseType.STRATEGY, eventKey)
 
-                stratInfo.forEach {
+                stratInfo?.forEach {
                     val strat = it["strategy"] as Document
                     val driving = it["driving_skill"] as Document
                     val mech = it["mechanical_soundness"] as Document
@@ -112,8 +112,8 @@ fun ScoringScreen(navController: NavController) {
                 Ranker.setPlay(play)
 
                 val hashOfTeamsToRankings: HashMap<Int, EnumMap<RankType, Double>> = HashMap()
-                val teams = manager.getDataFromEvent(DatabaseType.TEAMS, eventKey)
-                teams.forEach {
+                val teams = manager[databaseIndex.value]?.getDataFromEvent(DatabaseType.TEAMS, eventKey)
+                teams?.forEach {
                     val num = it["team_number"] as Int
                     if (!(play[RankType.STRATEGY]!!.keys.contains(num))) {
                         return@forEach
@@ -134,12 +134,12 @@ fun ScoringScreen(navController: NavController) {
                     )
                 }
 
-                val matchData = manager.getDataFromEvent(DatabaseType.MATCH, eventKey)
-                teams.forEach {
+                val matchData = manager[databaseIndex.value]?.getDataFromEvent(DatabaseType.MATCH, eventKey)
+                teams?.forEach {
                     val teamKey = it["team_number"] as Int
                     var totalMatch = 0
                     val tempHash = HashMap<String, Double>()
-                    matchData.forEach {
+                    matchData?.forEach {
                         if ((it["team"] as String).toInt() == teamKey) {
                             it.forEach breakFor@{ (matchKey, value) ->
                                 when (value) {
@@ -205,7 +205,7 @@ fun ScoringScreen(navController: NavController) {
                 Column (modifier = Modifier.fillMaxHeight().verticalScroll(matrixVerticalScrollState)) {
                     Row (modifier = Modifier.height(smallCellHeight).horizontalScroll(matrixHorizontalScrollState)) {
                         Text(" ", Modifier.border(1.dp, Color.Black).fillMaxHeight().width(cellWidth * 1.5f))
-                        finalMap.values.first().forEach { (key, value) ->
+                        finalMap.values.first().forEach { (key, _) ->
                             Text(key.toString(), modifier = Modifier.border(1.dp, Color.Black).fillMaxHeight().width(cellWidth))
                         }
                     }
@@ -214,7 +214,7 @@ fun ScoringScreen(navController: NavController) {
                         Row(modifier = Modifier.height(cellHeight).horizontalScroll(matrixHorizontalScrollState)) {
                             Text(formatKey(key), modifier = Modifier.border(1.dp, Color.Black).fillMaxHeight().width(cellWidth * 1.5f))
 
-                            value.forEach { (key, value) ->
+                            value.forEach { (_, value) ->
                                 Text(String.format("%.3f", value), modifier = Modifier.border(1.dp, Color.Black).fillMaxHeight().width(cellWidth), fontSize = 28.sp)
                             }
                         }

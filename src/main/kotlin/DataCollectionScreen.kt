@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
+import composables.databaseDropdown
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -57,6 +58,7 @@ fun DataCollectionScreen(navController: NavHostController) {
                     modifier = Modifier.align(Alignment.CenterVertically),
                     style = serverRunningTextStyle
                 )
+                databaseDropdown(true)
             }
 
             LazyColumn {

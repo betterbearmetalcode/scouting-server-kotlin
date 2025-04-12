@@ -58,8 +58,8 @@ fun DatabaseManagementScreen(navController: NavController) {
         Row {
             Button(onClick = {
                 try {
-                    manager.pullFromTBA(DatabaseType.TEAMS, eventCode)
-                    manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
+                    manager.get(databaseIndex.value)?.pullFromTBA(DatabaseType.TEAMS, eventCode)
+                    manager.get(databaseIndex.value)?.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
                 } catch (e: Exception) {
                     showError = true
                 }
@@ -75,13 +75,13 @@ fun DatabaseManagementScreen(navController: NavController) {
                     invalidEventError = true
                     return@Button
                 }
-                manager.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
-                val tbaData = manager.getDataFromEvent(DatabaseType.TBA_MATCHES, eventCode)
+                manager.get(databaseIndex.value)?.pullFromTBA(DatabaseType.TBA_MATCHES, eventCode)
+                val tbaData = manager.get(databaseIndex.value)?.getDataFromEvent(DatabaseType.TBA_MATCHES, eventCode)
 
-                val matches = manager.getDataFromEvent(DatabaseType.MATCH, eventCode)
-                matches.forEach {
+                val matches = manager.get(databaseIndex.value)?.getDataFromEvent(DatabaseType.MATCH, eventCode)
+                matches?.forEach {
                     val matchNum = (it["match"] as String).toInt()
-                    tbaData.forEach tba@{ tbaMatch ->
+                    tbaData?.forEach tba@{ tbaMatch ->
                         if ((matchNum != tbaMatch["match_number"]))
                             return@tba
                         try {
@@ -150,7 +150,7 @@ fun DatabaseManagementScreen(navController: NavController) {
                         }
                     }
                     val string = hashToJSONString(it)
-                    manager.processJSON(DatabaseType.MATCH, string, eventCode)
+                    manager.get(databaseIndex.value)?.processJSON(DatabaseType.MATCH, string, eventCode)
                 }
             }) {
                 Text("Update stop and endgame with TBA")
@@ -302,24 +302,24 @@ fun genExcelFile(eventKey: String, scoutingType: ScoutingType) {
 
     val matches =
         if (scoutingType == ScoutingType.MATCH) {
-            manager.getMatchesFromEvent(eventKey)
+            manager.get(databaseIndex.value)?.getMatchesFromEvent(eventKey)
         } else if (scoutingType == ScoutingType.PITS) {
-            manager.getPitsForEvent(eventKey)
+            manager.get(databaseIndex.value)?.getPitsForEvent(eventKey)
         } else if (scoutingType == ScoutingType.STRAT) {
-            manager.getStratForEvent(eventKey)
+            manager.get(databaseIndex.value)?.getStratForEvent(eventKey)
         } else {
-            manager.getMatchesFromEvent(eventKey)
+            manager.get(databaseIndex.value)?.getMatchesFromEvent(eventKey)
         }
 
     worksheet.value(0, 0, "Match #")
 
     var i = 1
     val keyLocationsHash = HashMap<String, Int>()
-    matches[0].forEach { (key, value) ->
+    matches?.get(0)?.forEach { (key, value) ->
         i = generateLocationIndices(key, value, "", keyLocationsHash, i, worksheet)
     }
 
-    matches.forEach {
+    matches?.forEach {
         val index = matches.indexOf(it)
         worksheet.value(index+1, 0, index+1)
         i = 1
@@ -367,12 +367,8 @@ fun handleValue(value: Any, key : String, json: StringBuilder) {
 fun hashToJSONString(hash : HashMap<String, Any>) : String {
     val json = StringBuilder()
 
-    val currentWord = StringBuilder()
-    var lastChar = ' '
-    var inNet = false
-    var inTele = false
-    var inNotes = false
-    var currentType = ""
+    StringBuilder()
+    ""
     json.append("{")
     hash.forEach { (key, value) ->
         handleValue(value, key, json)

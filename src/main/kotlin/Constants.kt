@@ -27,5 +27,5 @@ fun String.betterParseDouble(maxLength: Int = 10): Double {
     if (stringBuilder.toString().isNotEmpty()) {
         return stringBuilder.toString().toDouble()
     }
-    return 0.0;
+    return 0.0
 }

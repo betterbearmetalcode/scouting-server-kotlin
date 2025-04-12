@@ -2,6 +2,7 @@ package SDScoring
 
 import Order
 import RankType
+import databaseIndex
 import manager
 import org.bson.Document
 import org.tahomarobotics.scouting.DatabaseType
@@ -29,14 +30,14 @@ class Ranker(rankType: RankType, teamNumber: Int, eventKey: String) {
         val maxMatch = matches.size
         var sum = 0.0
 
-        val stratData = manager.getDataFromEvent(DatabaseType.STRATEGY, eventKey)
+        val stratData = manager[databaseIndex.value]?.getDataFromEvent(DatabaseType.STRATEGY, eventKey)
 
 
         matches.forEach { (key, value) ->
             var tempVal : Document? = null
             val redTeam = value[true]
             val blueTeam = value[false]
-            stratData.forEach {
+            stratData?.forEach {
                 if (
                     it["match"] as Int == key &&
                         ((redTeam != null && it["is_red_alliance"] as Boolean) ||
@@ -62,7 +63,7 @@ class Ranker(rankType: RankType, teamNumber: Int, eventKey: String) {
         var sum = 0
         val matches = PLAY!![rankType]!![teamNumber]!!
         val numMatches = matches.size
-        matches.forEach { (key, value) ->
+        matches.forEach { (_, value) ->
             val redScore = value[true]
             val blueScore = value[false]
             sum += redScore ?: blueScore ?: 0

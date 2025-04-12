@@ -25,7 +25,7 @@ fun Chart(navController: NavHostController) {
                 var dropExpanded by remember { mutableStateOf(false) }
                 var selectedValue by remember { mutableStateOf("") }
                 Card {
-                    Column() {
+                    Column {
                         Button (onClick = {dropExpanded = true}) {
                             Text(selectedValue)
                             DropdownMenu(expanded = dropExpanded, onDismissRequest = { dropExpanded = false }) {

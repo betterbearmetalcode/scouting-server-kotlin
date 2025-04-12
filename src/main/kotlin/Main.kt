@@ -2,6 +2,8 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Window
@@ -43,13 +45,16 @@ fun App() {
     }
 }
 
-val manager = DatabaseManager(2025)
+val manager = HashMap<String, DatabaseManager>()
+var databaseIndex = mutableStateOf("default")
 var server: Server? = null
 val chartValues = arrayOf(3,5,2,6,3,75)
 val chartColors = arrayOf(Color.Red, Color.Green, Color.Blue, Color.White)
 
 
 fun main() = application {
+    manager.set(databaseIndex.value, DatabaseManager(2025))
+    manager.set("Gahhhhhh", DatabaseManager(2025))
     Window(onCloseRequest = ::exitApplication) {
         App()
     }
