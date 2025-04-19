@@ -376,6 +376,7 @@ fun genExcelFile(eventKey: String, scoutingType: DatabaseType) {
     })
 
     matches.forEach {
+        printLn("Current Match: ${it}")
         val index = matches.indexOf(it)
         i = 1
         it.forEach { (key, value) ->
